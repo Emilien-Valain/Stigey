@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 import ReservationFlow from "@/components/ReservationFlow";
+import { getPrestations } from "@/lib/data/prestations";
+import { getJoursOuverts } from "@/lib/actions/reservations-publiques";
 
 export const metadata: Metadata = {
   title: "Réservation — Stigey",
   description: "Réservez votre soin du cuir chevelu chez Stigey : choisissez votre prestation, votre créneau et vos coordonnées.",
 };
 
-export default function ReservationPage() {
+export default async function ReservationPage() {
+  const [prestations, joursOuverts] = await Promise.all([getPrestations(), getJoursOuverts()]);
   return (
     <main>
       <section className="bg-coffee px-5 pt-8 pb-6 md:px-12 md:pt-11 md:pb-14">
@@ -27,7 +30,7 @@ export default function ReservationPage() {
       </section>
 
       <div className="rounded-t-[44px] bg-ivory md:rounded-t-[60px]">
-        <ReservationFlow />
+        <ReservationFlow prestations={prestations} joursOuverts={joursOuverts} />
       </div>
     </main>
   );

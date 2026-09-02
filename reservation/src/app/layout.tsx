@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { Bodoni_Moda, Lato } from "next/font/google";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import "./globals.css";
 
 // Presti Display (charte graphique) n'existe pas en police web ; Bodoni Moda
@@ -28,11 +26,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="fr" className={`${bodoni.variable} ${lato.variable}`}>
-      <body className="min-h-screen font-sans antialiased">
-        <Header />
-        {children}
-        <Footer />
-      </body>
+      <body className="min-h-screen font-sans antialiased">{children}</body>
     </html>
   );
 }

@@ -1,0 +1,19 @@
+rules:
+  - id: ics-invitation-not-attachment
+    languages: [generic]
+    severity: WARNING
+    message: >
+      Un .ics doit être envoyé comme INVITATION calendrier (Content-Type
+      "text/calendar; method=REQUEST", avec ORGANIZER/ATTENDEE, UID stable et
+      SEQUENCE incrémenté — voir docs/adr/0004-stack-et-hebergement-free-tier.md)
+      pour qu'il s'ajoute/se déplace/se supprime tout seul dans l'agenda du
+      client et de la praticienne. Ce fichier combine ".ics" avec un pattern de
+      pièce jointe (Content-Disposition: attachment) : vérifier que
+      method=REQUEST est bien utilisé et que ce n'est pas une pièce jointe
+      inerte.
+    patterns:
+      - pattern-regex: '\.ics'
+      - pattern-regex: '(?i)content-disposition\s*[:=]\s*["'']?attachment'
+    paths:
+      include:
+        - "**/src/**"

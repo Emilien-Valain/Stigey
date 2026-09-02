@@ -1,13 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { PRESTATIONS, getPrestation } from "@/lib/prestations";
-import { joursOuverts, jourLabel, slotsPour } from "@/lib/demo-creneaux";
+import type { Prestation } from "@/lib/data/prestations";
+import { genererJours, jourLabel, toISODate } from "@/lib/calendrier";
+import { getCreneauxDisponibles, creerReservation } from "@/lib/actions/reservations-publiques";
+import type { Slot } from "@/lib/creneaux";
 
 const STEP_LABELS = ["Le soin", "Le créneau", "Vos coordonnées", "Confirmé"];
 
-export default function ReservationFlow() {
+export default function ReservationFlow({
+  prestations,
+  joursOuverts,
+}: {
+  prestations: Prestation[];
+  joursOuverts: number[];
+}) {
   const [step, setStep] = useState(1);
   const [soinId, setSoinId] = useState<string | null>(null);
   const [jourTs, setJourTs] = useState<number | null>(null);
@@ -17,10 +25,34 @@ export default function ReservationFlow() {
   const [tel, setTel] = useState("");
   const [rgpd, setRgpd] = useState(false);
 
-  const soin = soinId ? getPrestation(soinId) : undefined;
-  const jours = useMemo(() => joursOuverts(8), []);
+  const [slots, setSlots] = useState<Slot[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [envoi, setEnvoi] = useState(false);
+  const [erreur, setErreur] = useState<string | null>(null);
+
+  const soin = soinId ? prestations.find((p) => p.id === soinId) : undefined;
+  const jours = useMemo(() => genererJours(joursOuverts, 8), [joursOuverts]);
   const jourDate = useMemo(() => (jourTs ? new Date(jourTs) : null), [jourTs]);
-  const slots = useMemo(() => (jourDate ? slotsPour(jourDate) : []), [jourDate]);
+
+  useEffect(() => {
+    if (!jourDate || !soinId) return;
+    let annule = false;
+    // Fetch-on-param-change (cf. react.dev/learn/you-might-not-need-an-effect
+    // #fetching-data) : le drapeau de chargement est bien synchronisé sur un
+    // système externe (la requête réseau), pas dérivé d'un autre état React.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSlotsLoading(true);
+    getCreneauxDisponibles(soinId, toISODate(jourDate))
+      .then((s) => {
+        if (!annule) setSlots(s);
+      })
+      .finally(() => {
+        if (!annule) setSlotsLoading(false);
+      });
+    return () => {
+      annule = true;
+    };
+  }, [jourDate, soinId]);
 
   const step2Ok = !!(jourTs && heure);
   const step3Ok = !!(nom.trim() && email.trim() && rgpd);
@@ -34,15 +66,43 @@ export default function ReservationFlow() {
     setEmail("");
     setTel("");
     setRgpd(false);
+    setErreur(null);
+  }
+
+  async function confirmer() {
+    if (!soinId || !jourDate || !heure) return;
+    setEnvoi(true);
+    setErreur(null);
+    const resultat = await creerReservation({
+      prestationId: soinId,
+      jour: toISODate(jourDate),
+      heure,
+      nom,
+      email,
+      telephone: tel,
+    });
+    setEnvoi(false);
+
+    if (resultat.ok) {
+      setStep(4);
+      return;
+    }
+
+    if (resultat.conflit) {
+      setErreur("Ce créneau vient d'être réservé. Choisissez-en un autre parmi les créneaux à jour ci-dessous.");
+      setHeure(null);
+      setStep(2);
+      setSlotsLoading(true);
+      getCreneauxDisponibles(soinId, toISODate(jourDate))
+        .then(setSlots)
+        .finally(() => setSlotsLoading(false));
+    } else {
+      setErreur("Votre réservation n'a pas pu être enregistrée. Réessayez dans un instant.");
+    }
   }
 
   return (
     <div className="px-5 py-[30px] md:px-12 md:py-[58px]">
-      <div className="rounded-2xl border border-brownred/20 bg-cottonrose/30 px-4 py-3 text-[12px] leading-[1.6] text-[#5c1a18] md:px-5 md:text-[13px]">
-        Aperçu de démonstration : ce tunnel n&apos;est pas encore relié à un agenda réel.
-        Aucune réservation, e-mail ni SMS n&apos;est envoyé pour le moment.
-      </div>
-
       <div className="mt-6 flex gap-1.5 md:mt-9 md:gap-2">
         {[0, 1, 2, 3].map((i) => (
           <div
@@ -69,7 +129,7 @@ export default function ReservationFlow() {
                 premier soin.
               </p>
               <div className="mt-[22px] grid grid-cols-1 gap-[11px] md:mt-[26px] md:grid-cols-2 md:gap-3.5">
-                {PRESTATIONS.map((p) => {
+                {prestations.map((p) => {
                   const active = soinId === p.id;
                   return (
                     <button
@@ -116,6 +176,12 @@ export default function ReservationFlow() {
                 Choisissez votre créneau
               </h2>
 
+              {erreur && (
+                <div className="mt-4 rounded-2xl border border-brownred/20 bg-cottonrose/30 px-4 py-3 text-[12.5px] leading-[1.6] text-[#5c1a18]">
+                  {erreur}
+                </div>
+              )}
+
               <div
                 data-scroll
                 className="mt-5 flex gap-2.5 overflow-x-auto pb-1 md:mt-[26px]"
@@ -129,6 +195,7 @@ export default function ReservationFlow() {
                       onClick={() => {
                         setJourTs(j.date.getTime());
                         setHeure(null);
+                        setErreur(null);
                       }}
                       className={`shrink-0 rounded-2xl border-2 px-0 py-3 text-center transition-all duration-200 ${
                         active
@@ -154,28 +221,38 @@ export default function ReservationFlow() {
                   <div className="mt-6 text-[10px] font-bold tracking-[0.16em] text-taupe uppercase md:mt-7 md:tracking-[0.18em]">
                     {jourLabel(jourDate)}
                   </div>
-                  <div className="mt-3 grid grid-cols-3 gap-2.5 md:mt-3.5 md:grid-cols-4 md:gap-2.5">
-                    {slots.map((s) => {
-                      const active = heure === s.heure;
-                      return (
-                        <button
-                          key={s.heure}
-                          type="button"
-                          disabled={!s.libre}
-                          onClick={() => setHeure(s.heure)}
-                          className={`rounded-2xl border-2 py-3.5 font-sans text-[13px] font-bold tracking-[0.04em] transition-all duration-200 ${
-                            active
-                              ? "border-brownred bg-brownred text-ivory"
-                              : s.libre
-                                ? "border-coffee/10 bg-white hover:-translate-y-0.5 hover:border-brownred/35 hover:bg-cottonrose/20"
-                                : "cursor-not-allowed border-dashed border-coffee/[.14] text-[#b3a294] line-through"
-                          }`}
-                        >
-                          {s.libre ? s.heure : `${s.heure} — complet`}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  {slotsLoading ? (
+                    <div className="mt-3 text-[12.5px] text-taupe md:mt-3.5">
+                      Chargement des créneaux…
+                    </div>
+                  ) : slots.length === 0 ? (
+                    <div className="mt-3 text-[12.5px] text-taupe md:mt-3.5">
+                      Aucun créneau disponible ce jour-là.
+                    </div>
+                  ) : (
+                    <div className="mt-3 grid grid-cols-3 gap-2.5 md:mt-3.5 md:grid-cols-4 md:gap-2.5">
+                      {slots.map((s) => {
+                        const active = heure === s.heure;
+                        return (
+                          <button
+                            key={s.heure}
+                            type="button"
+                            disabled={!s.libre}
+                            onClick={() => setHeure(s.heure)}
+                            className={`rounded-2xl border-2 py-3.5 font-sans text-[13px] font-bold tracking-[0.04em] transition-all duration-200 ${
+                              active
+                                ? "border-brownred bg-brownred text-ivory"
+                                : s.libre
+                                  ? "border-coffee/10 bg-white hover:-translate-y-0.5 hover:border-brownred/35 hover:bg-cottonrose/20"
+                                  : "cursor-not-allowed border-dashed border-coffee/[.14] text-[#b3a294] line-through"
+                            }`}
+                          >
+                            {s.libre ? s.heure : `${s.heure} — complet`}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -213,6 +290,12 @@ export default function ReservationFlow() {
               <h2 className="mt-3.5 font-serif text-[28px] font-normal md:mt-4 md:text-[38px]">
                 Vos coordonnées
               </h2>
+
+              {erreur && (
+                <div className="mt-4 rounded-2xl border border-brownred/20 bg-cottonrose/30 px-4 py-3 text-[12.5px] leading-[1.6] text-[#5c1a18]">
+                  {erreur}
+                </div>
+              )}
 
               <div className="mt-5 flex flex-col gap-3 md:mt-[26px] md:grid md:grid-cols-2 md:gap-3.5">
                 <label className="block">
@@ -286,15 +369,15 @@ export default function ReservationFlow() {
               >
                 <button
                   type="button"
-                  disabled={!step3Ok}
-                  onClick={() => step3Ok && setStep(4)}
+                  disabled={!step3Ok || envoi}
+                  onClick={confirmer}
                   className={`w-full rounded-full py-4 font-sans text-sm font-bold tracking-[0.04em] transition-all duration-200 ${
-                    step3Ok
+                    step3Ok && !envoi
                       ? "bg-brownred text-ivory hover:brightness-110 hover:shadow-[0_10px_24px_-12px_rgba(153,38,43,0.55)] active:scale-[0.98]"
                       : "cursor-not-allowed bg-coffee/10 text-taupe"
                   }`}
                 >
-                  Confirmer ma réservation
+                  {envoi ? "Envoi…" : "Confirmer ma réservation"}
                 </button>
                 <p className="mt-3.5 hidden text-[12.5px] leading-[1.7] text-taupe md:block">
                   Annulation libre jusqu&apos;à 24 h avant le rendez-vous. Aucune information de

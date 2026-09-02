@@ -1,8 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { PRESTATIONS } from "@/lib/prestations";
+import { getPrestations } from "@/lib/data/prestations";
 
-export default function Home() {
+export default async function Home() {
+  const PRESTATIONS = await getPrestations();
   return (
     <main>
       {/* ================= HERO ================= */}

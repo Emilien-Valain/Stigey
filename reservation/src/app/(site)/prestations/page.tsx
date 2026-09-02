@@ -1,13 +1,14 @@
 import Image from "next/image";
 import type { Metadata } from "next";
-import { PRESTATIONS } from "@/lib/prestations";
+import { getPrestations } from "@/lib/data/prestations";
 
 export const metadata: Metadata = {
   title: "Les soins — Stigey",
   description: "Le détail des prestations Stigey : diagnostic, head spa signature, soin apaisant et soin profond cheveux texturés.",
 };
 
-export default function PrestationsPage() {
+export default async function PrestationsPage() {
+  const PRESTATIONS = await getPrestations();
   return (
     <main>
       <section className="bg-coffee px-5 pt-8 pb-8 text-center md:px-12 md:pt-11 md:pb-[60px] md:grid md:grid-cols-2 md:items-end md:gap-[60px] md:text-left">
@@ -95,7 +96,7 @@ export default function PrestationsPage() {
                         : "border-coffee/[.12] text-clay"
                     }`}
                   >
-                    <b className="text-coffee">Pour qui</b> · {p.pourQui}
+                    <b className="text-coffee">Pour qui</b> · {p.cible}
                   </div>
                 </div>
               </div>
