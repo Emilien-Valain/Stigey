@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+# Fast checks only: lint-staged (eslint + semgrep on staged files) + typecheck.
+# Heavy checks (unit/integration/E2E) run in pre-push instead — see ADR-0007.
+
+if git diff --cached --name-only | grep -q '^reservation/'; then
+  cd reservation || exit 1
+  npx lint-staged || exit 1
+  npm run typecheck || exit 1
+fi

@@ -1,0 +1,26 @@
+#!/usr/bin/env sh
+# Heavy checks: unit + DB-integration tests, then E2E. Slower on purpose —
+# fast checks already ran in pre-commit. See ADR-0007.
+
+if git diff --name-only @{push}.. 2>/dev/null | grep -q '^reservation/' || ! git rev-parse @{push} >/dev/null 2>&1; then
+  cd reservation || exit 1
+
+  npm run db:test:start || exit 1
+  npm test
+  test_status=$?
+
+  if [ $test_status -ne 0 ]; then
+    npm run db:test:stop
+    echo "Unit/integration tests failed — push aborted."
+    exit 1
+  fi
+
+  npm run test:e2e
+  e2e_status=$?
+  npm run db:test:stop
+
+  if [ $e2e_status -ne 0 ]; then
+    echo "E2E tests failed — push aborted."
+    exit 1
+  fi
+fi
