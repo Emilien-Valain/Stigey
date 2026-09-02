@@ -6,6 +6,7 @@ import type { Prestation } from "@/lib/data/prestations";
 import { genererJours, jourLabel, toISODate } from "@/lib/calendrier";
 import { getCreneauxDisponibles, creerReservation } from "@/lib/actions/reservations-publiques";
 import type { Slot } from "@/lib/creneaux";
+import { emailValide } from "@/lib/validation";
 
 const STEP_LABELS = ["Le soin", "Le créneau", "Vos coordonnées", "Confirmé"];
 
@@ -55,7 +56,9 @@ export default function ReservationFlow({
   }, [jourDate, soinId]);
 
   const step2Ok = !!(jourTs && heure);
-  const step3Ok = !!(nom.trim() && email.trim() && rgpd);
+  const emailTouche = email.trim().length > 0;
+  const emailInvalide = emailTouche && !emailValide(email);
+  const step3Ok = !!(nom.trim() && email.trim() && emailValide(email) && rgpd);
 
   function reset() {
     setStep(1);
@@ -70,7 +73,7 @@ export default function ReservationFlow({
   }
 
   async function confirmer() {
-    if (!soinId || !jourDate || !heure) return;
+    if (!soinId || !jourDate || !heure || !emailValide(email)) return;
     setEnvoi(true);
     setErreur(null);
     const resultat = await creerReservation({
@@ -319,8 +322,18 @@ export default function ReservationFlow({
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="awa@exemple.fr"
-                    className="mt-1.5 w-full rounded-2xl border-[1.5px] border-coffee/[.14] bg-white px-3.5 py-3.5 font-sans text-[15px] text-coffee transition-colors duration-200 focus:border-brownred/50 focus:outline-none md:mt-2"
+                    aria-invalid={emailInvalide}
+                    className={`mt-1.5 w-full rounded-2xl border-[1.5px] bg-white px-3.5 py-3.5 font-sans text-[15px] text-coffee transition-colors duration-200 focus:outline-none md:mt-2 ${
+                      emailInvalide
+                        ? "border-brownred/60 focus:border-brownred"
+                        : "border-coffee/[.14] focus:border-brownred/50"
+                    }`}
                   />
+                  {emailInvalide && (
+                    <span className="mt-1.5 block text-[11.5px] text-brownred">
+                      Cet email ne semble pas valide.
+                    </span>
+                  )}
                 </label>
                 <label className="block md:col-span-2">
                   <span className="block font-sans text-[10px] font-bold tracking-[0.16em] text-taupe uppercase">

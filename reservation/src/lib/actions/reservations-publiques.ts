@@ -2,6 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { calculerCreneaux, type Slot } from "@/lib/creneaux";
+import { emailValide } from "@/lib/validation";
+import { envoyerConfirmation } from "@/lib/notify/reservation-emails";
 
 function jourSemaineDe(jour: string): number {
   const [y, m, d] = jour.split("-").map(Number);
@@ -85,6 +87,10 @@ export type ReservationResult =
 const PRATICIENNE_ID = "11111111-1111-4111-8111-111111111111";
 
 export async function creerReservation(input: ReservationInput): Promise<ReservationResult> {
+  if (!emailValide(input.email)) {
+    return { ok: false, conflit: false, erreur: "Email invalide." };
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("creer_reservation", {
     p_prestation_id: input.prestationId,
@@ -104,6 +110,26 @@ export async function creerReservation(input: ReservationInput): Promise<Reserva
     }
     return { ok: false, conflit: false, erreur: error.message };
   }
+
+  const { data: prestation } = await supabase
+    .from("prestations")
+    .select("nom")
+    .eq("id", data.prestation_id)
+    .single();
+
+  // Best-effort (envoyerConfirmation avale ses propres erreurs) : on attend
+  // l'envoi avant de répondre, sinon un runtime serverless peut couper la
+  // fonction avant qu'une promesse "en arrière-plan" n'ait fini d'envoyer.
+  await envoyerConfirmation({
+    id: data.id,
+    jour: data.jour,
+    heureDebut: data.heure_debut,
+    heureFin: data.heure_fin,
+    nom: data.nom,
+    email: data.email,
+    icsSequence: data.ics_sequence,
+    prestationNom: prestation?.nom ?? "",
+  });
 
   return { ok: true, jour: data.jour, heure: data.heure_debut };
 }

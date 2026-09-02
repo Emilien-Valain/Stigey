@@ -112,13 +112,21 @@ create table reservations (
   praticienne_id uuid not null references auth.users (id),
   prestation_id uuid not null references prestations (id),
   nom text not null,
-  email text not null,
+  email text not null check (email ~ '^[^\s@]+@[^\s@]+\.[^\s@]+$'),
   telephone text,
   jour date not null,
   heure_debut time not null,
   heure_fin time not null,
   statut text not null default 'confirmee'
     check (statut in ('confirmee', 'annulee', 'honoree', 'no_show')),
+  -- ADR-0004 : l'invitation .ics reste la MÊME entrée d'agenda tout au long
+  -- de la vie de la réservation (UID = id de cette ligne, stable), avec un
+  -- SEQUENCE incrémenté à chaque REQUEST mis à jour (Report) ou CANCEL
+  -- (Annulation) — jamais un nouvel évènement dupliqué dans l'agenda.
+  ics_sequence int not null default 0,
+  -- Anti-doublon du rappel 48h (ADR-0002) : un cron peut tourner plus d'une
+  -- fois sur la même fenêtre sans renvoyer le rappel.
+  rappel_envoye boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   check (heure_fin > heure_debut),

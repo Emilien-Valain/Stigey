@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { calculerCreneaux } from "@/lib/creneaux";
 import { toISODate } from "@/lib/calendrier";
+import { envoyerAnnulation, envoyerReport } from "@/lib/notify/reservation-emails";
 
 function minutesEntre(debut: string, fin: string): number {
   const [dh, dm] = debut.split(":").map(Number);
@@ -38,7 +39,35 @@ export async function marquerNoShow(id: string) {
 }
 
 export async function annulerReservation(id: string) {
-  await updateStatut(id, "annulee");
+  const supabase = await createClient();
+
+  const { data: avant, error: fetchError } = await supabase
+    .from("reservations")
+    .select("ics_sequence")
+    .eq("id", id)
+    .single();
+  if (fetchError) throw fetchError;
+
+  const { data, error } = await supabase
+    .from("reservations")
+    .update({ statut: "annulee", ics_sequence: avant.ics_sequence + 1 })
+    .eq("id", id)
+    .select("id, jour, heure_debut, heure_fin, nom, email, ics_sequence, prestations(nom)")
+    .single();
+  if (error) throw error;
+
+  revalider();
+
+  await envoyerAnnulation({
+    id: data.id,
+    jour: data.jour,
+    heureDebut: data.heure_debut,
+    heureFin: data.heure_fin,
+    nom: data.nom,
+    email: data.email,
+    icsSequence: data.ics_sequence,
+    prestationNom: (data.prestations as unknown as { nom: string } | null)?.nom ?? "",
+  });
 }
 
 export type ReportResult =
@@ -56,19 +85,28 @@ export async function reporterReservation(
   const supabase = await createClient();
   const { data: existante, error: fetchError } = await supabase
     .from("reservations")
-    .select("heure_debut, heure_fin")
+    .select("jour, heure_debut, heure_fin, ics_sequence")
     .eq("id", id)
     .single();
 
   if (fetchError) return { ok: false, conflit: false, erreur: fetchError.message };
 
+  const ancienJour = existante.jour;
+  const ancienneHeure = existante.heure_debut;
   const duree = minutesEntre(existante.heure_debut, existante.heure_fin);
   const heureFin = ajouterMinutes(heureDebut, duree);
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("reservations")
-    .update({ jour, heure_debut: heureDebut, heure_fin: heureFin })
-    .eq("id", id);
+    .update({
+      jour,
+      heure_debut: heureDebut,
+      heure_fin: heureFin,
+      ics_sequence: existante.ics_sequence + 1,
+    })
+    .eq("id", id)
+    .select("id, jour, heure_debut, heure_fin, nom, email, ics_sequence, prestations(nom)")
+    .single();
 
   if (error) {
     if (error.code === "23P01") return { ok: false, conflit: true };
@@ -76,6 +114,22 @@ export async function reporterReservation(
   }
 
   revalider();
+
+  await envoyerReport(
+    {
+      id: data.id,
+      jour: data.jour,
+      heureDebut: data.heure_debut,
+      heureFin: data.heure_fin,
+      nom: data.nom,
+      email: data.email,
+      icsSequence: data.ics_sequence,
+      prestationNom: (data.prestations as unknown as { nom: string } | null)?.nom ?? "",
+    },
+    ancienJour,
+    ancienneHeure,
+  );
+
   return { ok: true };
 }
 
