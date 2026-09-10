@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { calculerCreneaux, type Slot } from "@/lib/creneaux";
 import { emailValide } from "@/lib/validation";
 import { envoyerConfirmation } from "@/lib/notify/reservation-emails";
+import { estDeadlock } from "@/lib/db-erreurs";
 
 function jourSemaineDe(jour: string): number {
   const [y, m, d] = jour.split("-").map(Number);
@@ -92,7 +93,7 @@ export async function creerReservation(input: ReservationInput): Promise<Reserva
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("creer_reservation", {
+  const rpcArgs = {
     p_prestation_id: input.prestationId,
     p_praticienne_id: PRATICIENNE_ID,
     p_jour: input.jour,
@@ -100,7 +101,16 @@ export async function creerReservation(input: ReservationInput): Promise<Reserva
     p_nom: input.nom,
     p_email: input.email,
     p_telephone: input.telephone || null,
-  });
+  };
+  let resultat = await supabase.rpc("creer_reservation", rpcArgs);
+
+  // Deadlock sous vraie concurrence : transitoire, pas un vrai conflit de
+  // créneau -> on retente une fois avant de conclure quoi que ce soit.
+  if (resultat.error && estDeadlock(resultat.error)) {
+    resultat = await supabase.rpc("creer_reservation", rpcArgs);
+  }
+
+  const { data, error } = resultat;
 
   if (error) {
     // ADR-0001 : conflit de créneau au lancement -> message explicite,

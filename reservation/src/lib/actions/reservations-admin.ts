@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { calculerCreneaux } from "@/lib/creneaux";
 import { toISODate } from "@/lib/calendrier";
 import { envoyerAnnulation, envoyerReport } from "@/lib/notify/reservation-emails";
+import { estDeadlock } from "@/lib/db-erreurs";
 
 function minutesEntre(debut: string, fin: string): number {
   const [dh, dm] = debut.split(":").map(Number);
@@ -96,17 +97,28 @@ export async function reporterReservation(
   const duree = minutesEntre(existante.heure_debut, existante.heure_fin);
   const heureFin = ajouterMinutes(heureDebut, duree);
 
-  const { data, error } = await supabase
-    .from("reservations")
-    .update({
-      jour,
-      heure_debut: heureDebut,
-      heure_fin: heureFin,
-      ics_sequence: existante.ics_sequence + 1,
-    })
-    .eq("id", id)
-    .select("id, jour, heure_debut, heure_fin, nom, email, ics_sequence, prestations(nom)")
-    .single();
+  const appliquerReport = () =>
+    supabase
+      .from("reservations")
+      .update({
+        jour,
+        heure_debut: heureDebut,
+        heure_fin: heureFin,
+        ics_sequence: existante.ics_sequence + 1,
+      })
+      .eq("id", id)
+      .select("id, jour, heure_debut, heure_fin, nom, email, ics_sequence, prestations(nom)")
+      .single();
+
+  let resultat = await appliquerReport();
+
+  // Deadlock sous vraie concurrence : transitoire, pas un vrai conflit de
+  // créneau -> on retente une fois avant de conclure quoi que ce soit.
+  if (resultat.error && estDeadlock(resultat.error)) {
+    resultat = await appliquerReport();
+  }
+
+  const { data, error } = resultat;
 
   if (error) {
     if (error.code === "23P01") return { ok: false, conflit: true };

@@ -77,6 +77,62 @@ describe("contrainte d'exclusion sur reservations (ADR-0001)", () => {
     ).rejects.toMatchObject({ code: "23P01" });
   });
 
+  it("deux connexions séparées qui insèrent le même créneau en même temps : une seule passe", async () => {
+    // Contrairement aux tests ci-dessus (une seule connexion, inserts
+    // séquentiels dans la même transaction), ce test prouve que la
+    // contrainte d'exclusion Postgres tient sous vraie concurrence : deux
+    // clients distincts, hors de la transaction englobante du test, qui
+    // écrivent en même temps sur le créneau. Un test séquentiel prouve que
+    // la contrainte existe ; celui-ci prouve qu'elle tient sous charge réelle.
+    const clientA = new Client({ connectionString: CONNECTION_STRING });
+    const clientB = new Client({ connectionString: CONNECTION_STRING });
+    await clientA.connect();
+    await clientB.connect();
+
+    try {
+      const inserer = (client: Client) =>
+        client.query(
+          `insert into reservations
+            (praticienne_id, prestation_id, nom, email, jour, heure_debut, heure_fin, statut)
+           values ($1, $2, 'Test', 'test@test.fr', $3, '13:00', '14:00', 'confirmee')`,
+          [PRATICIENNE_ID, PRESTATION_ID, JOUR],
+        );
+
+      const [resultA, resultB] = await Promise.allSettled([inserer(clientA), inserer(clientB)]);
+
+      try {
+        const outcomes = [resultA, resultB];
+        const fulfilled = outcomes.filter((r) => r.status === "fulfilled");
+        const rejected = outcomes.filter((r) => r.status === "rejected");
+
+        expect(fulfilled).toHaveLength(1);
+        expect(rejected).toHaveLength(1);
+        // Sous vraie concurrence, Postgres peut renvoyer soit une violation
+        // propre de la contrainte d'exclusion (23P01), soit un deadlock
+        // (40P01, les deux transactions se verrouillent pendant la
+        // vérification de l'index GiST) — les deux prouvent que le
+        // double-booking a été empêché. Le code applicatif doit gérer les
+        // deux (voir src/lib/db-erreurs.ts et son usage dans les actions).
+        const code = (rejected[0] as PromiseRejectedResult).reason?.code;
+        expect(["23P01", "40P01"]).toContain(code);
+      } finally {
+        // Nettoyage, même si les assertions ci-dessus échouent : cet insert a
+        // été fait en autocommit sur clientA/clientB, hors de la transaction
+        // BEGIN/ROLLBACK du test (celle de `client`) — le rollback global ne
+        // l'efface pas. Sans ce nettoyage garanti, un test qui échoue laisse
+        // une ligne orpheline qui fait échouer les runs suivants pour une
+        // raison différente (créneau déjà pris par un run précédent).
+        await clientA.query(
+          `delete from reservations where jour = $1 and heure_debut = '13:00' and praticienne_id = $2`,
+          [JOUR, PRATICIENNE_ID],
+        );
+      }
+    } finally {
+      await clientA.end();
+      await clientB.end();
+    }
+  });
+
   it("creer_reservation() calcule heure_fin depuis la durée et respecte la contrainte", async () => {
     const premiere = await client.query(
       `select * from creer_reservation($1, $2, $3, '09:00', 'Alice', 'alice@test.fr', null)`,
