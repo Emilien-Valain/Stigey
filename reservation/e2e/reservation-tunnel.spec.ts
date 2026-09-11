@@ -10,10 +10,22 @@ test("un client peut aller du choix du soin jusqu'à la confirmation", async ({ 
   await page.getByRole("button", { name: /Diagnostic du cuir chevelu/ }).click();
   await expect(page.getByRole("heading", { name: "Choisissez votre créneau" })).toBeVisible();
 
-  await page.locator("[data-scroll] button").first().click();
-
+  // Le seed remplit délibérément le jour courant (vue admin de démo) et pose
+  // une indisponibilité à +10 jours : on ne peut donc pas supposer que le
+  // premier jour affiché a un créneau libre. On essaie les jours dans l'ordre
+  // jusqu'à en trouver un qui en a — robuste au jour/heure d'exécution.
+  const jours = page.locator("[data-scroll] button");
+  const nbJours = await jours.count();
   const creneauLibre = page.getByRole("button", { name: /^\d{1,2}:\d{2}$/ }).first();
-  await creneauLibre.waitFor();
+  let trouve = false;
+  for (let i = 0; i < nbJours; i++) {
+    await jours.nth(i).click();
+    if (await creneauLibre.isVisible().catch(() => false)) {
+      trouve = true;
+      break;
+    }
+  }
+  expect(trouve, "aucun jour affiché n'a de créneau libre").toBe(true);
   await creneauLibre.click();
 
   await page.getByRole("button", { name: "Continuer" }).click();
