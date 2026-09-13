@@ -248,20 +248,25 @@ ask APP_DOMAIN "Domain you bought (e.g. stigey.fr):"
 note "If you bought it elsewhere instead, you'll add the same DNS records via"
 note "that registrar's dashboard in the next two stages."
 
-# ── 6. Email forwarding for the praticienne's inbox ─────────────────────────
-stage "Email forwarding: praticienne@$APP_DOMAIN"
-say "Free forwarding (praticienne@$APP_DOMAIN → her real inbox), no mailbox needed."
+# ── 6. Real mailbox for the praticienne (Zoho Mail) ─────────────────────────
+stage "Zoho Mail: praticienne@$APP_DOMAIN real mailbox"
+say "A real mailbox (not just forwarding) so she can receive AND send as"
+say "praticienne@$APP_DOMAIN — the same address rappel emails get sent from."
 say "Doing this before creating her login, so the login email is one she can"
 say "actually receive mail at."
-open_url "https://improvmx.com/"
-step "Sign up, add domain '$APP_DOMAIN'."
-step "ImprovMX shows 2 DNS records (MX + a TXT/SPF record)."
+open_url "https://www.zoho.com/mail/zohomail-pricing.html"
+step "Sign up for the Mail Lite plan (~0.90-1 USD/user/month, 5GB each)."
+step "Add domain '$APP_DOMAIN', verify ownership (Zoho gives a TXT record)."
+step "Zoho shows MX records + an SPF (TXT) record + a DKIM (TXT) record."
 open_url "https://vercel.com/dashboard"
-step "Go to your account → Domains → $APP_DOMAIN → DNS Records, add both records"
-step "ImprovMX gave you."
-ask FORWARD_TO_EMAIL "Her real inbox to forward to:"
-step "Back in ImprovMX, add an alias: praticienne -> $FORWARD_TO_EMAIL"
-pause "Alias saved and DNS records added?"
+step "Go to your account → Domains → $APP_DOMAIN → DNS Records, add the"
+step "verification TXT, the MX records, and the DKIM record Zoho gave you."
+warn "SPF: only ONE 'v=spf1...' TXT record is allowed per domain. Add Zoho's"
+warn "SPF now; when Resend (stage 8) gives you its own, merge both includes"
+warn "into that SAME record instead of adding a second one."
+step "In Zoho admin, create the mailbox: praticienne@$APP_DOMAIN, set a real"
+step "password (share it with her out of band — don't paste it back here)."
+pause "Domain verified and mailbox created?"
 
 # ── 7. Supabase: create the praticienne's real login ────────────────────────
 stage "Supabase: praticienne account"
@@ -284,12 +289,14 @@ open_url "https://resend.com/domains"
 step "Add domain '$APP_DOMAIN' (sign in / sign up first if needed)."
 step "Resend shows DNS records (DKIM/SPF, sometimes DMARC)."
 step "Add them the same way, in Vercel → Domains → $APP_DOMAIN → DNS Records."
+warn "If an SPF (TXT starting 'v=spf1') record already exists from Zoho Mail,"
+warn "merge Resend's include into that SAME record — don't add a second one."
 pause "Records added? (Resend verifies them shortly after — a few minutes, occasionally longer)"
 open_url "https://resend.com/api-keys"
 step "Create an API key (Sending access is enough)."
 ask_secret RESEND_API_KEY "Paste the Resend API key:"
 write_env RESEND_API_KEY "$RESEND_API_KEY"
-RESEND_FROM_EMAIL="Stigey <reservations@$APP_DOMAIN>"
+RESEND_FROM_EMAIL="Stigey <$PRATICIENNE_EMAIL>"
 write_env RESEND_FROM_EMAIL "$RESEND_FROM_EMAIL"
 note "RESEND_FROM_EMAIL set to: $RESEND_FROM_EMAIL"
 
@@ -318,8 +325,9 @@ for key in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY \
     && printf '  %s✓ set%s Vercel env %s (production)\n' "$GREEN" "$RESET" "$key" \
     || { warn "failed to set Vercel env $key"; SKIPPED+=("Vercel env $key"); }
 done
-note "In Vercel Project Settings → General, confirm 'Root Directory' = reservation"
-note "(vercel link from this subfolder usually sets it, but worth checking)."
+note "In Vercel Project Settings → General, confirm 'Root Directory' is EMPTY —"
+note "we deploy via CLI from inside reservation/, so it must stay blank (only"
+note "git-triggered builds from the Stigey/ repo root need it set)."
 if confirm "Deploy to production now (npx vercel --prod)?"; then
   ( cd "$RESERVATION_DIR" && npx vercel --prod )
 else

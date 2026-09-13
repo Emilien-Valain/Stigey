@@ -1,0 +1,10 @@
+reservation/node_modules
+reservation/.next
+reservation/.tools-venv
+reservation/coverage
+reservation/test-results
+reservation/playwright-report
+reservation/blob-report
+reservation/playwright/.cache
+reservation/supabase/.branches
+reservation/supabase/.temp

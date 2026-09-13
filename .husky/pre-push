@@ -5,6 +5,11 @@
 if git diff --name-only @{push}.. 2>/dev/null | grep -q '^reservation/' || ! git rev-parse @{push} >/dev/null 2>&1; then
   cd reservation || exit 1
 
+  # Harnais IA, pilier 5 niveau 2 : CVE connues dans les dépendances.
+  # --audit-level=high pour ne pas bloquer le push sur du bruit low/moderate
+  # non actionnable côté deps transitives — à resserrer si ça arrive en vrai.
+  npm run audit || exit 1
+
   npm run db:test:start || exit 1
   npm test
   test_status=$?
@@ -23,4 +28,8 @@ if git diff --name-only @{push}.. 2>/dev/null | grep -q '^reservation/' || ! git
     echo "E2E tests failed — push aborted."
     exit 1
   fi
+
+  # Harnais IA, pilier 7 (tier 0) : budget de bundle JS. Réutilise le build
+  # produit par le webServer de Playwright ci-dessus — pas de second build.
+  npm run check:bundle-size || exit 1
 fi

@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { calculerCreneaux, type Slot } from "@/lib/creneaux";
 import { emailValide } from "@/lib/validation";
-import { envoyerConfirmation } from "@/lib/notify/reservation-emails";
+import { envoyerConfirmation, envoyerNotificationPraticienne } from "@/lib/notify/reservation-emails";
 import { estDeadlock } from "@/lib/db-erreurs";
 
 function jourSemaineDe(jour: string): number {
@@ -82,10 +82,12 @@ export type ReservationResult =
   | { ok: false; conflit: true }
   | { ok: false; conflit: false; erreur: string };
 
-// UUID de l'unique praticienne au lancement (voir supabase/seed.sql).
+// UUID de l'unique praticienne. Par défaut le seed local (voir
+// supabase/seed.sql) ; en production ce n'est pas le même utilisateur Auth,
+// donc PRATICIENNE_ID doit être défini côté Vercel avec le vrai UUID.
 // Reste correct pour ADR-0001 : chaque Réservation est rattachée à une
 // praticienne, prêt pour un futur multi-praticienne.
-const PRATICIENNE_ID = "11111111-1111-4111-8111-111111111111";
+const PRATICIENNE_ID = process.env.PRATICIENNE_ID ?? "11111111-1111-4111-8111-111111111111";
 
 export async function creerReservation(input: ReservationInput): Promise<ReservationResult> {
   if (!emailValide(input.email)) {
@@ -118,6 +120,7 @@ export async function creerReservation(input: ReservationInput): Promise<Reserva
     if (error.code === "23P01") {
       return { ok: false, conflit: true };
     }
+    console.error("creer_reservation RPC error:", JSON.stringify(error));
     return { ok: false, conflit: false, erreur: error.message };
   }
 
@@ -127,19 +130,25 @@ export async function creerReservation(input: ReservationInput): Promise<Reserva
     .eq("id", data.prestation_id)
     .single();
 
-  // Best-effort (envoyerConfirmation avale ses propres erreurs) : on attend
-  // l'envoi avant de répondre, sinon un runtime serverless peut couper la
-  // fonction avant qu'une promesse "en arrière-plan" n'ait fini d'envoyer.
-  await envoyerConfirmation({
+  // Best-effort (les fonctions d'envoi avalent leurs propres erreurs) : on
+  // attend l'envoi avant de répondre, sinon un runtime serverless peut
+  // couper la fonction avant qu'une promesse "en arrière-plan" n'ait fini
+  // d'envoyer.
+  const emailReservation = {
     id: data.id,
     jour: data.jour,
     heureDebut: data.heure_debut,
     heureFin: data.heure_fin,
     nom: data.nom,
     email: data.email,
+    telephone: data.telephone,
     icsSequence: data.ics_sequence,
     prestationNom: prestation?.nom ?? "",
-  });
+  };
+  await Promise.all([
+    envoyerConfirmation(emailReservation),
+    envoyerNotificationPraticienne(emailReservation),
+  ]);
 
   return { ok: true, jour: data.jour, heure: data.heure_debut };
 }
