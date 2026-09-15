@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import type { Metadata } from "next";
 import { getPrestations } from "@/lib/data/prestations";
 
@@ -6,6 +7,9 @@ export const metadata: Metadata = {
   title: "Les soins — Stigey",
   description: "Le détail des prestations Stigey : diagnostic, head spa signature, soin apaisant et soin profond cheveux texturés.",
 };
+
+// Repères courts affichés au-dessus du titre de chaque carte, dans l'ordre du catalogue.
+const EYEBROWS = ["Pour commencer", "Le plus demandé", "Tout en douceur", "Le plus long"];
 
 export default async function PrestationsPage() {
   const PRESTATIONS = await getPrestations();
@@ -32,65 +36,59 @@ export default async function PrestationsPage() {
       </section>
 
       <section className="rounded-t-[44px] bg-ivory px-5 py-[30px] md:rounded-t-[60px] md:px-12 md:py-[60px]">
-        <div className="flex flex-col gap-4 md:gap-6">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {PRESTATIONS.map((p, i) => {
-            const imageFirst = i % 2 === 0;
+            const eyebrow = EYEBROWS[i];
             return (
               <div
                 key={p.id}
-                className={`overflow-hidden rounded-[26px] md:rounded-[30px] ${
+                className={`flex flex-col overflow-hidden rounded-[26px] md:rounded-2xl ${
                   p.badge ? "bg-cottonrose" : "bg-white"
-                } md:grid md:grid-cols-[340px_1fr] ${
-                  imageFirst ? "" : "md:grid-cols-[1fr_340px]"
                 }`}
               >
-                <div
-                  className={`relative h-[170px] md:h-auto md:min-h-[250px] ${
-                    imageFirst ? "md:order-1" : "md:order-2"
-                  }`}
-                >
+                <div className="relative h-[170px] md:h-[132px]">
                   <Image
                     src={p.image}
                     alt={p.nom}
                     fill
-                    sizes="(min-width: 768px) 340px, 100vw"
+                    sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
                     className="object-cover"
                   />
                 </div>
-                <div
-                  className={`p-5 md:p-[34px_40px] ${imageFirst ? "md:order-2" : "md:order-1"}`}
-                >
-                  {p.badge && (
-                    <div className="text-[9px] font-bold tracking-[0.2em] text-brownred uppercase md:text-[9.5px] md:tracking-[0.2em]">
-                      {p.badge}
+                <div className="flex flex-1 flex-col p-5 md:p-[18px_20px_20px]">
+                  {eyebrow && (
+                    <div
+                      className={`text-[9px] font-bold tracking-[0.2em] uppercase md:text-[8.5px] ${
+                        p.badge ? "text-brownred" : "text-taupe"
+                      }`}
+                    >
+                      {eyebrow}
                     </div>
                   )}
-                  <div className="mt-2 flex flex-col gap-1.5 md:mt-0 md:flex-row md:items-baseline md:justify-between md:gap-5">
-                    <h2 className="font-serif text-[23px] font-medium md:text-[32px]">
-                      {p.nom}
-                    </h2>
-                    <div className="flex items-center gap-2 font-sans text-[11px] font-bold tracking-[0.14em] whitespace-nowrap text-brownred uppercase">
-                      <span>{p.duree}</span>
-                      <span className="h-[3px] w-[3px] rounded-full bg-sunflower" />
-                      <span>{p.prix}</span>
-                    </div>
+                  <h2 className="mt-2 font-serif text-[23px] leading-[1.25] font-medium md:mt-2 md:text-[19px]">
+                    {p.nom}
+                  </h2>
+                  <div className="mt-2 flex items-center gap-2 font-sans text-[11px] font-bold tracking-[0.14em] whitespace-nowrap text-brownred uppercase md:text-[9.5px]">
+                    <span>{p.duree}</span>
+                    <span className="h-[3px] w-[3px] rounded-full bg-sunflower" />
+                    <span>{p.prix}</span>
                   </div>
                   <p
-                    className={`mt-3 max-w-[620px] text-[13.5px] leading-[1.65] md:hidden ${
+                    className={`mt-3 text-[13.5px] leading-[1.65] md:hidden ${
                       p.badge ? "text-[#5c1a18]" : "text-clay"
                     }`}
                   >
                     {p.descriptionMobile ?? p.description}
                   </p>
                   <p
-                    className={`mt-4 hidden max-w-[620px] text-[14.5px] leading-[1.75] md:block ${
+                    className={`mt-3 hidden text-[12.5px] leading-[1.65] md:block ${
                       p.badge ? "text-[#5c1a18]" : "text-clay"
                     }`}
                   >
                     {p.description}
                   </p>
                   <div
-                    className={`mt-3.5 border-t pt-3.5 text-[12.5px] leading-[1.6] md:mt-[22px] md:pt-[18px] md:text-[13.5px] ${
+                    className={`mt-3.5 border-t pt-3.5 text-[12.5px] leading-[1.6] md:mt-auto md:pt-3 md:text-[11.5px] md:leading-[1.55] ${
                       p.badge
                         ? "border-brownred/25 text-[#5c1a18]"
                         : "border-coffee/[.12] text-clay"
@@ -104,40 +102,87 @@ export default async function PrestationsPage() {
           })}
         </div>
 
-        <div className="mt-6 rounded-[26px] bg-coffee p-[22px] text-[#f6e3d6] md:mt-10 md:rounded-[30px] md:p-[44px_48px]">
-          <h3 className="font-serif text-[23px] font-normal text-ivory md:text-[34px]">
-            Bon à savoir
-          </h3>
-          <div className="mt-4 flex flex-col gap-3.5 md:mt-7 md:grid md:grid-cols-3 md:gap-[34px]">
+        {/* Bon à savoir — encart sombre sur mobile */}
+        <div className="mt-6 rounded-[26px] bg-coffee p-[22px] text-[#f6e3d6] md:hidden">
+          <h3 className="font-serif text-[23px] font-normal text-ivory">Bon à savoir</h3>
+          <div className="mt-4 flex flex-col gap-3.5">
             <div>
-              <div className="text-[10px] font-bold tracking-[0.16em] text-sunflower uppercase md:tracking-[0.18em]">
+              <div className="text-[10px] font-bold tracking-[0.16em] text-sunflower uppercase">
                 Avant le soin
               </div>
-              <p className="mt-1.5 text-[13px] leading-[1.6] text-latte md:hidden">
+              <p className="mt-1.5 text-[13px] leading-[1.6] text-latte">
                 Venez avec vos cheveux comme ils sont : pas besoin de les laver.
-              </p>
-              <p className="mt-2 hidden text-sm leading-[1.7] text-latte md:block">
-                Venez avec vos cheveux comme ils sont : pas besoin de les laver avant de venir.
               </p>
             </div>
             <div>
-              <div className="text-[10px] font-bold tracking-[0.16em] text-sunflower uppercase md:tracking-[0.18em]">
+              <div className="text-[10px] font-bold tracking-[0.16em] text-sunflower uppercase">
                 Rythme conseillé
               </div>
-              <p className="mt-1.5 text-[13px] leading-[1.6] text-latte md:mt-2 md:text-sm md:leading-[1.7]">
+              <p className="mt-1.5 text-[13px] leading-[1.6] text-latte">
                 Un soin toutes les 4 à 6 semaines pour installer un vrai changement.
               </p>
             </div>
             <div>
-              <div className="text-[10px] font-bold tracking-[0.16em] text-sunflower uppercase md:tracking-[0.18em]">
+              <div className="text-[10px] font-bold tracking-[0.16em] text-sunflower uppercase">
                 Ce que je ne fais pas
               </div>
-              <p className="mt-1.5 text-[13px] leading-[1.6] text-latte md:mt-2 md:text-sm md:leading-[1.7]">
+              <p className="mt-1.5 text-[13px] leading-[1.6] text-latte">
                 Ni coupe, ni coiffage, ni coloration : uniquement le soin du cuir chevelu et du
                 cheveu.
               </p>
             </div>
           </div>
+        </div>
+
+        {/* Bon à savoir — simple filet sur desktop */}
+        <div className="mt-7 hidden border-t border-coffee/[.14] pt-[26px] md:grid md:grid-cols-[150px_repeat(3,1fr)] md:gap-8">
+          <h3 className="font-serif text-[22px] leading-[1.2] font-normal text-coffee">
+            Bon à savoir
+          </h3>
+          <div>
+            <div className="text-[8.5px] font-bold tracking-[0.18em] text-brownred uppercase">
+              Avant le soin
+            </div>
+            <p className="mt-[7px] text-[12.5px] leading-[1.65] text-clay">
+              Venez avec vos cheveux comme ils sont : pas besoin de les laver avant de venir.
+            </p>
+          </div>
+          <div>
+            <div className="text-[8.5px] font-bold tracking-[0.18em] text-brownred uppercase">
+              Rythme conseillé
+            </div>
+            <p className="mt-[7px] text-[12.5px] leading-[1.65] text-clay">
+              Un soin toutes les 4 à 6 semaines pour installer un vrai changement.
+            </p>
+          </div>
+          <div>
+            <div className="text-[8.5px] font-bold tracking-[0.18em] text-brownred uppercase">
+              Ce que je ne fais pas
+            </div>
+            <p className="mt-[7px] text-[12.5px] leading-[1.65] text-clay">
+              Ni coupe, ni coiffage, ni coloration : uniquement le soin du cuir chevelu et du
+              cheveu.
+            </p>
+          </div>
+        </div>
+
+        {/* Barre CTA — desktop uniquement */}
+        <div className="mt-[30px] hidden items-center justify-between gap-6 rounded-2xl bg-coffee p-[22px_26px] md:flex">
+          <div>
+            <div className="font-serif text-[21px] font-normal text-ivory">
+              Une question avant de choisir ?
+            </div>
+            <p className="mt-[5px] text-[12.5px] leading-[1.6] text-latte">
+              Le diagnostic est le bon point de départ : il orientera le soin le plus juste pour
+              vous.
+            </p>
+          </div>
+          <Link
+            href="/reservation"
+            className="shrink-0 rounded-full bg-sunflower px-[26px] py-3.5 font-sans text-[10.5px] font-bold tracking-[0.16em] text-coffee uppercase transition-all duration-200 hover:brightness-105 active:scale-[0.97]"
+          >
+            Réserver mon moment
+          </Link>
         </div>
       </section>
     </main>
