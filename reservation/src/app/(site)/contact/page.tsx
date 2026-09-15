@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Contact — Stigey",
-  description: "Adresse, téléphone, horaires et accès du head spa Stigey, 12 rue des Capucins à Lyon.",
+  description: "Adresse, téléphone, horaires et accès du head spa Stigey, à Angers.",
 };
 
 const HORAIRES = [
@@ -59,7 +59,7 @@ export default function ContactPage() {
             priority
           />
           <span className="absolute bottom-3.5 left-3.5 rounded-full bg-coffee/75 px-[11px] py-[7px] font-sans text-[10px] font-bold tracking-[0.14em] text-ivory uppercase md:bottom-[22px] md:left-[22px] md:px-4 md:py-2.5 md:text-[10px] md:tracking-[0.16em]">
-            Plan d&apos;accès · 12 rue des Capucins
+            Plan d&apos;accès · Angers
           </span>
         </div>
       </section>
@@ -71,20 +71,17 @@ export default function ContactPage() {
               Adresse
             </div>
             <p className="mt-2 font-serif text-xl leading-[1.35] md:mt-3 md:text-[26px]">
-              12 rue des Capucins
-              <br />
-              69001 Lyon
+              Angers
             </p>
             <p className="mt-2 text-[12.5px] leading-[1.6] text-clay md:mt-3 md:text-[13.5px] md:leading-[1.7]">
-              Métro Hôtel de Ville — 6 min à pied. Interphone « Stigey », 2<sup>e</sup>{" "}
-              étage.
+              Adresse précise communiquée à la confirmation du rendez-vous.
             </p>
           </div>
           <div className="rounded-[22px] bg-white p-5 md:rounded-[26px] md:p-8">
             <div className="text-[10px] font-bold tracking-[0.18em] text-brownred uppercase">
               Téléphone
             </div>
-            <p className="mt-2 font-serif text-xl md:mt-3 md:text-[26px]">06 12 34 56 78</p>
+            <p className="mt-2 font-serif text-xl md:mt-3 md:text-[26px]">07 71 14 09 45</p>
             <p className="mt-2 text-[12.5px] text-clay md:hidden">
               Uniquement sur rendez-vous.
             </p>

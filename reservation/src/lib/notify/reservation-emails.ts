@@ -3,7 +3,7 @@ import { jourCourtLabel } from "@/lib/calendrier";
 import { heureLabel } from "@/lib/format";
 import { getResendClient, adresseExpedition, praticienneEmail, praticienneNom } from "./resend";
 
-const LIEU = "12 rue des Capucins, 69001 Lyon";
+const LIEU = "Angers";
 
 // Charte graphique (voir src/app/globals.css) — dupliquée ici car les emails
 // ne peuvent pas consommer les tokens Tailwind du site.
@@ -45,7 +45,7 @@ function emailShell(bodyHtml: string): string {
       <div style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:20px;overflow:hidden;border:1px solid ${HAIRLINE};">
         <div style="background:${COFFEE};padding:26px 32px;text-align:center;">
           <div style="font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:22px;letter-spacing:0.04em;color:${IVORY};">Stigey</div>
-          <div style="margin-top:6px;font-size:10px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:${COTTONROSE};">Head spa &middot; Lyon</div>
+          <div style="margin-top:6px;font-size:10px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:${COTTONROSE};">Head spa &middot; Angers</div>
         </div>
         <div style="padding:32px;color:${COFFEE};font-size:15px;line-height:1.65;">
           ${bodyHtml}
@@ -242,7 +242,7 @@ export async function envoyerRappel(r: ReservationPourEmail) {
       <p>Petit rappel : votre rendez-vous <strong>${r.prestationNom}</strong> approche.</p>
       ${creneauBox(creneauLabel(r.jour, r.heureDebut), LIEU)}
       <p>Un empêchement ? Vous pouvez encore annuler ou reporter gratuitement jusqu'à 24 h avant le
-      rendez-vous — écrivez-moi ou appelez au 06 12 34 56 78.</p>
+      rendez-vous — écrivez-moi ou appelez au 07 71 14 09 45.</p>
       <p>À très vite,<br>${praticienneNom()}</p>
     `),
   });

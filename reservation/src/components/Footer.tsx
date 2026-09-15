@@ -15,7 +15,7 @@ export default function Footer() {
           />
           <p className="mt-4 text-[13px] leading-[1.8] text-[#f3d4cf] md:mt-5">
             Head spa · soin du cuir chevelu
-            <br className="hidden md:block" /> et des cheveux texturés, à Lyon.
+            <br className="hidden md:block" /> et des cheveux texturés, à Angers.
           </p>
         </div>
 
@@ -24,11 +24,9 @@ export default function Footer() {
             Contact
           </div>
           <p className="mt-3 text-[13.5px] leading-[1.9] text-[#f3d4cf]">
-            12 rue des Capucins
+            Angers
             <br />
-            69001 Lyon
-            <br />
-            06 12 34 56 78
+            07 71 14 09 45
           </p>
           <a
             href="https://www.instagram.com/stigey1/"

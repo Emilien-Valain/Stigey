@@ -24,7 +24,7 @@ export default function MentionsLegalesPage() {
           </section>
           <section>
             <h2 className="font-serif text-xl text-coffee">Contact</h2>
-            <p className="mt-1">12 rue des Capucins, 69001 Lyon — 06 12 34 56 78.</p>
+            <p className="mt-1">Angers — 07 71 14 09 45.</p>
           </section>
         </div>
       </div>

@@ -346,7 +346,7 @@ export default function ReservationFlow({
                     type="tel"
                     value={tel}
                     onChange={(e) => setTel(e.target.value)}
-                    placeholder="06 12 34 56 78"
+                    placeholder="07 71 14 09 45"
                     className="mt-1.5 w-full rounded-2xl border-[1.5px] border-coffee/[.14] bg-white px-3.5 py-3.5 font-sans text-[15px] text-coffee transition-colors duration-200 focus:border-brownred/50 focus:outline-none md:mt-2"
                   />
                 </label>
@@ -421,7 +421,7 @@ export default function ReservationFlow({
                   {jourDate ? jourLabel(jourDate) : ""} à {heure}
                 </div>
                 <div className="mt-1.5 text-[12.5px] leading-[1.6] text-clay">
-                  12 rue des Capucins, 69001 Lyon — interphone « Stigey », 2<sup>e</sup> étage.
+                  Angers — adresse précise communiquée à la confirmation.
                 </div>
               </div>
 
@@ -493,9 +493,7 @@ function SummaryCard({
           Lieu
         </div>
         <div className="mt-1.5 text-[13px] leading-[1.5] text-clay md:mt-2 md:text-sm md:leading-[1.6]">
-          12 rue des Capucins
-          <br />
-          69001 Lyon — 2<sup>e</sup> étage
+          Angers
         </div>
       </div>
       <div className="mt-4 md:mt-6">{children}</div>

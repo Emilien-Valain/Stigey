@@ -28,7 +28,7 @@ export default async function Home() {
           </p>
           <p className="mx-auto mt-4 hidden max-w-[480px] text-[15px] leading-[1.65] text-sand md:mx-0 md:block md:text-[17px] md:leading-[1.7]">
             Des soins sensoriels et experts, pensés pour votre bien-être, votre texture et la
-            santé de votre cuir chevelu. À Lyon, sur rendez-vous, en tête à tête.
+            santé de votre cuir chevelu. À Angers, sur rendez-vous, en tête à tête.
           </p>
           <div className="mt-5 flex flex-col items-center gap-3 md:mt-8 md:flex-row">
             <Link
@@ -47,7 +47,7 @@ export default async function Home() {
           <div className="mt-5 flex justify-center gap-[18px] font-sans text-[9.5px] font-bold tracking-[0.16em] text-[#8a6f5e] uppercase md:mt-10 md:justify-start md:gap-[22px] md:text-[10px]">
             <span>Sur rendez-vous</span>
             <span className="text-sunflower">·</span>
-            <span>Lyon 1er</span>
+            <span>Angers</span>
             <span className="text-sunflower">·</span>
             <span className="md:hidden">Solo</span>
             <span className="hidden md:inline">Praticienne solo</span>

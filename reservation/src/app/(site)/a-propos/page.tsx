@@ -115,7 +115,7 @@ export default function AProposPage() {
           ))}
         </div>
         <p className="mt-3 text-center text-[11px] tracking-[0.04em] text-taupe md:mt-4 md:text-xs md:tracking-[0.06em]">
-          Le lieu, à Lyon 1<sup>er</sup> — quatre places de stationnement à proximité.
+          Le lieu, à Angers — quatre places de stationnement à proximité.
         </p>
       </section>
     </main>

@@ -18,9 +18,9 @@ const lato = Lato({
 });
 
 export const metadata: Metadata = {
-  title: "Stigey — Head spa à Lyon",
+  title: "Stigey — Head spa à Angers",
   description:
-    "Soins et massages du cuir chevelu, moments de relaxation et conseils personnalisés pour cheveux texturés et cuirs chevelus sensibles. Sur rendez-vous, à Lyon.",
+    "Soins et massages du cuir chevelu, moments de relaxation et conseils personnalisés pour cheveux texturés et cuirs chevelus sensibles. Sur rendez-vous, à Angers.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
