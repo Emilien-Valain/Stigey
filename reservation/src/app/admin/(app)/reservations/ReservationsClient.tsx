@@ -168,10 +168,15 @@ export default function ReservationsClient({
                   <div className="font-serif text-[19px] leading-tight">{r.heure}</div>
                 </div>
                 <div className="text-sm font-bold">{r.nom}</div>
-                <div className="text-[12.5px] leading-[1.5] text-clay">
-                  {r.telephone}
-                  <br />
-                  {r.email}
+                <div className="flex flex-col text-[12.5px] leading-[1.5] text-clay">
+                  {r.telephone && (
+                    <a href={`tel:${r.telephone}`} className="text-coffee hover:underline">
+                      {r.telephone}
+                    </a>
+                  )}
+                  <a href={`mailto:${r.email}`} className="text-coffee hover:underline">
+                    {r.email}
+                  </a>
                 </div>
                 <div className="text-[13px]">
                   {r.prestation}
@@ -228,8 +233,12 @@ export default function ReservationsClient({
             <Ligne label="Créneau" valeur={`${detail.jour} · ${detail.heure}`} />
             <Ligne label="Prestation" valeur={detail.prestation} />
             <Ligne label="Durée" valeur={detail.duree} />
-            <Ligne label="Téléphone" valeur={detail.telephone || "—"} />
-            <Ligne label="Email" valeur={detail.email} last />
+            <Ligne
+              label="Téléphone"
+              valeur={detail.telephone || "—"}
+              href={detail.telephone ? `tel:${detail.telephone}` : undefined}
+            />
+            <Ligne label="Email" valeur={detail.email} href={`mailto:${detail.email}`} last />
           </div>
           <div className="mt-5 flex flex-wrap gap-2">
             {detail.actionnable && (
@@ -301,7 +310,17 @@ export default function ReservationsClient({
   );
 }
 
-function Ligne({ label, valeur, last }: { label: string; valeur: string; last?: boolean }) {
+function Ligne({
+  label,
+  valeur,
+  href,
+  last,
+}: {
+  label: string;
+  valeur: string;
+  href?: string;
+  last?: boolean;
+}) {
   return (
     <div
       className={`flex justify-between gap-3.5 border-t border-coffee/10 py-3 ${last ? "border-b" : ""}`}
@@ -309,7 +328,13 @@ function Ligne({ label, valeur, last }: { label: string; valeur: string; last?: 
       <span className="font-sans text-[10px] font-bold tracking-[0.16em] text-taupe uppercase">
         {label}
       </span>
-      <span className="text-right text-sm break-all">{valeur}</span>
+      {href ? (
+        <a href={href} className="text-right text-sm break-all text-coffee underline">
+          {valeur}
+        </a>
+      ) : (
+        <span className="text-right text-sm break-all">{valeur}</span>
+      )}
     </div>
   );
 }
