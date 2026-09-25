@@ -20,18 +20,16 @@ export default async function Home() {
             className="mx-auto h-[54px] w-auto opacity-90 md:mx-0 md:h-[46px]"
           />
           <div className="mt-5 text-[9.5px] font-bold tracking-[0.26em] text-cottonrose uppercase md:mt-6 md:text-[10px] md:tracking-[0.28em]">
-            Head spa · cuir chevelu &amp; cheveux texturés
+            Head spa · santé capillaire · coiffures protectrices · lissage
           </div>
           <h1 className="mt-3.5 font-serif text-[45px] leading-[1.04] font-normal text-ivory md:mt-4 md:text-[74px] md:leading-[0.98]">
-            Un cocon pour votre <span className="text-cottonrose italic">cuir chevelu</span>.
+            Un cocon dédié à votre <span className="text-cottonrose italic">santé capillaire</span>.
           </h1>
           <p className="mx-auto mt-4 max-w-[480px] text-[15px] leading-[1.65] text-sand md:hidden">
-            Des soins sensoriels et experts, pensés pour votre bien-être, votre texture et la
-            santé de votre cuir chevelu.
+            Des soins et prestations pensés pour prendre soin du cuir chevelu et des cheveux, tout en vous offrant une véritable parenthèse de détente.
           </p>
           <p className="mx-auto mt-4 hidden max-w-[480px] text-[15px] leading-[1.65] text-sand md:mx-0 md:block md:text-[17px] md:leading-[1.7]">
-            Des soins sensoriels et experts, pensés pour votre bien-être, votre texture et la
-            santé de votre cuir chevelu. À Angers, sur rendez-vous, en tête à tête.
+            Des soins et prestations pensés pour prendre soin du cuir chevelu et des cheveux, tout en vous offrant une véritable parenthèse de détente.
           </p>
           <div className="mt-5 flex flex-col items-center gap-3 md:mt-8 md:flex-row">
             <Link
@@ -75,9 +73,6 @@ export default async function Home() {
             <div className="text-[9.5px] font-bold tracking-[0.24em] text-brownred uppercase md:text-[10px] md:tracking-[0.26em]">
               Les soins
             </div>
-            <h2 className="mt-2.5 font-serif text-[33px] leading-[1.1] font-normal md:mt-3 md:text-[48px] md:leading-[1.06]">
-              Quatre façons de prendre soin
-            </h2>
           </div>
           <Link
             href="/prestations"
@@ -127,6 +122,61 @@ export default async function Home() {
         </Link>
       </section>
 
+      {/* ================= NOS PRESTATIONS ================= */}
+      <section className="bg-ivory px-5 pb-[34px] md:px-12 md:pb-[70px]">
+        <div className="text-center md:text-left">
+          <div className="text-[9.5px] font-bold tracking-[0.24em] text-brownred uppercase md:text-[10px] md:tracking-[0.26em]">
+            Nos prestations
+          </div>
+        </div>
+        <div className="mt-[18px] grid grid-cols-1 gap-[13px] md:mt-[26px] md:grid-cols-3 md:gap-[18px]">
+          {[
+            {
+              titre: "Head spa",
+              texte:
+                "Un protocole dédié au cuir chevelu et aux cheveux, pensé comme une véritable parenthèse de détente et de soin.",
+            },
+            {
+              titre: "Détox du cuir chevelu",
+              texte:
+                "Un soin complet destiné à purifier le cuir chevelu et à éliminer les impuretés, résidus de produits et excès de sébum, afin de repartir sur une base propre.",
+            },
+            {
+              titre: "Nettoyage des locks",
+              texte:
+                "Un nettoyage en profondeur adapté aux locks pour éliminer les résidus et impuretés, tout en respectant la fibre et le cuir chevelu.",
+            },
+            {
+              titre: "Soins hydratants & réparateurs",
+              texte:
+                "Des soins ciblés pour apporter souplesse, douceur et confort aux cheveux, tout en aidant à limiter la sécheresse et la casse.",
+            },
+            {
+              titre: "Lissage",
+              texte:
+                "Des prestations de lissage pour celles et ceux qui souhaitent modifier temporairement ou durablement la texture de leurs cheveux.",
+            },
+            {
+              titre: "Diagnostic capillaire",
+              texte:
+                "Une analyse personnalisée du cuir chevelu et de la fibre capillaire pour identifier les besoins des cheveux et établir une routine adaptée.",
+            },
+            {
+              titre: "Accompagnement pousse",
+              texte:
+                "Un accompagnement personnalisé sur 3 mois, composé de rendez-vous réguliers avec moi pour suivre l’évolution de vos cheveux, réaliser les soins adaptés et vous accompagner dans votre routine afin de favoriser la rétention de longueur.",
+            },
+          ].map((item) => (
+            <div key={item.titre} className="rounded-[24px] bg-white p-[18px] md:rounded-[26px] md:p-[26px]">
+              <h3 className="font-serif text-[21px] leading-[1.2] font-medium md:text-[23px]">
+                {item.titre}
+              </h3>
+              <p className="mt-2.5 text-[13.5px] leading-[1.6] text-clay">{item.texte}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* ================= CONFIANCE ================= */}
       <section className="bg-ivory px-5 py-[34px] md:px-12 md:py-0 md:pb-[70px]">
         <div className="md:grid md:grid-cols-[380px_1fr] md:items-center md:gap-[50px]">
@@ -167,7 +217,7 @@ export default async function Home() {
                   dot: "bg-sunflower",
                   titre: "Une expertise des textures",
                   texte:
-                    "Boucles, crépus, locks : votre texture guide chaque geste et chaque produit.",
+                    "Cheveux européens, ondulés, bouclés, crépus, locks.",
                 },
                 {
                   dot: "bg-cottonrose",
@@ -272,13 +322,10 @@ export default async function Home() {
               Un héritage, un savoir-faire
             </h2>
             <p className="mt-2.5 text-[13.5px] leading-[1.65] text-clay md:hidden">
-              Stigey — du cauris, coquillage porté par l&apos;héritage guinéen et ouest-africain
-              — est né d&apos;une envie simple : prendre soin, vraiment.
+              Le cauri est un petit coquillage qui, au fil des époques, a porté une histoire africaine riche, profonde et puissante.
             </p>
             <p className="mt-[18px] hidden text-[15px] leading-[1.75] text-clay md:block">
-              Stigey — du cauris, coquillage porté par l&apos;héritage guinéen et ouest-africain
-              — est né d&apos;une envie simple : prendre soin, vraiment. Je reçois seule, sur
-              rendez-vous, pour ne jamais avoir à écourter un soin.
+              Le cauri est un petit coquillage qui, au fil des époques, a porté une histoire africaine riche, profonde et puissante.
             </p>
             <Link
               href="/a-propos"
