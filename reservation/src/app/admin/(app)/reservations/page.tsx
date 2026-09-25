@@ -1,6 +1,6 @@
 import { getReservationsAvenir, getReservationsHistorique } from "@/lib/data/reservations";
 import { jourCourtLabel } from "@/lib/calendrier";
-import { heureLabel } from "@/lib/format";
+import { heureLabel, prixLabel } from "@/lib/format";
 import ReservationsClient from "./ReservationsClient";
 
 const STATUT_LABELS: Record<string, string> = {
@@ -21,6 +21,7 @@ function toItem(r: Awaited<ReturnType<typeof getReservationsAvenir>>[number], ac
     telephone: r.telephone ?? "",
     prestation: r.prestationNom,
     duree: r.dureeLabel,
+    prix: r.prixCentimes === null ? "" : prixLabel(r.prixCentimes),
     statutLabel: STATUT_LABELS[r.statut] ?? r.statut,
     actionnable: actionnable && r.statut === "confirmee",
   };

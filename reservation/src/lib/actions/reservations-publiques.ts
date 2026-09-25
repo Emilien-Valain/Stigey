@@ -5,6 +5,8 @@ import { calculerCreneaux, type Slot } from "@/lib/creneaux";
 import { emailValide } from "@/lib/validation";
 import { envoyerConfirmation, envoyerNotificationPraticienne } from "@/lib/notify/reservation-emails";
 import { estDeadlock } from "@/lib/db-erreurs";
+import { dureeReservable } from "@/lib/data/durees";
+import { libelleSoin } from "@/lib/format";
 
 function jourSemaineDe(jour: string): number {
   const [y, m, d] = jour.split("-").map(Number);
@@ -14,12 +16,13 @@ function jourSemaineDe(jour: string): number {
 export async function getCreneauxDisponibles(
   prestationId: string,
   jour: string,
+  varianteId?: string,
 ): Promise<Slot[]> {
   const supabase = await createClient();
 
-  const [{ data: prestation }, { data: reglages }, { data: dispo }, { data: indispos }, { data: reservations }] =
+  const [dureeMinutes, { data: reglages }, { data: dispo }, { data: indispos }, { data: reservations }] =
     await Promise.all([
-      supabase.from("prestations").select("duree_minutes").eq("id", prestationId).single(),
+      dureeReservable(supabase, prestationId, varianteId),
       supabase.from("reglages").select("battement_minutes").eq("id", 1).single(),
       supabase
         .from("disponibilites_recurrentes")
@@ -36,10 +39,10 @@ export async function getCreneauxDisponibles(
       supabase.rpc("creneaux_occupes_le", { p_jour: jour }),
     ]);
 
-  if (!prestation || !dispo || !reglages) return [];
+  if (dureeMinutes === null || !dispo || !reglages) return [];
 
   return calculerCreneaux({
-    dureeMinutes: prestation.duree_minutes,
+    dureeMinutes,
     battementMinutes: reglages.battement_minutes,
     dispoJour: {
       ouvert: dispo.ouvert,
@@ -70,6 +73,8 @@ export async function getJoursOuverts(): Promise<number[]> {
 
 export type ReservationInput = {
   prestationId: string;
+  // Obligatoire si la Prestation a des Variantes (contrôlé en base).
+  varianteId?: string;
   jour: string;
   heure: string;
   nom: string;
@@ -103,6 +108,7 @@ export async function creerReservation(input: ReservationInput): Promise<Reserva
     p_nom: input.nom,
     p_email: input.email,
     p_telephone: input.telephone || null,
+    p_variante_id: input.varianteId ?? null,
   };
   let resultat = await supabase.rpc("creer_reservation", rpcArgs);
 
@@ -143,7 +149,7 @@ export async function creerReservation(input: ReservationInput): Promise<Reserva
     email: data.email,
     telephone: data.telephone,
     icsSequence: data.ics_sequence,
-    prestationNom: prestation?.nom ?? "",
+    prestationNom: libelleSoin(prestation?.nom ?? "", data.variante_nom),
   };
   await Promise.all([
     envoyerConfirmation(emailReservation),

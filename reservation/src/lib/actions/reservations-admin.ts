@@ -6,12 +6,8 @@ import { calculerCreneaux } from "@/lib/creneaux";
 import { toISODate } from "@/lib/calendrier";
 import { envoyerAnnulation, envoyerReport } from "@/lib/notify/reservation-emails";
 import { estDeadlock } from "@/lib/db-erreurs";
-
-function minutesEntre(debut: string, fin: string): number {
-  const [dh, dm] = debut.split(":").map(Number);
-  const [fh, fm] = fin.split(":").map(Number);
-  return fh * 60 + fm - (dh * 60 + dm);
-}
+import { dureeReservable } from "@/lib/data/durees";
+import { libelleSoin, minutesEntre } from "@/lib/format";
 
 function ajouterMinutes(heure: string, minutes: number): string {
   const [h, m] = heure.split(":").map(Number);
@@ -53,7 +49,7 @@ export async function annulerReservation(id: string) {
     .from("reservations")
     .update({ statut: "annulee", ics_sequence: avant.ics_sequence + 1 })
     .eq("id", id)
-    .select("id, jour, heure_debut, heure_fin, nom, email, ics_sequence, prestations(nom)")
+    .select("id, jour, heure_debut, heure_fin, nom, email, ics_sequence, variante_nom, prestations(nom)")
     .single();
   if (error) throw error;
 
@@ -67,7 +63,10 @@ export async function annulerReservation(id: string) {
     nom: data.nom,
     email: data.email,
     icsSequence: data.ics_sequence,
-    prestationNom: (data.prestations as unknown as { nom: string } | null)?.nom ?? "",
+    prestationNom: libelleSoin(
+      (data.prestations as unknown as { nom: string } | null)?.nom ?? "",
+      data.variante_nom,
+    ),
   });
 }
 
@@ -86,7 +85,7 @@ export async function reporterReservation(
   const supabase = await createClient();
   const { data: existante, error: fetchError } = await supabase
     .from("reservations")
-    .select("jour, heure_debut, heure_fin, ics_sequence")
+    .select("prestation_id, variante_id, jour, heure_debut, heure_fin, ics_sequence")
     .eq("id", id)
     .single();
 
@@ -94,7 +93,11 @@ export async function reporterReservation(
 
   const ancienJour = existante.jour;
   const ancienneHeure = existante.heure_debut;
-  const duree = minutesEntre(existante.heure_debut, existante.heure_fin);
+  // Durée actuelle de la Variante réservée (ou de la Prestation simple) ; si
+  // elle n'existe plus (Variante désactivée), on garde la durée déjà réservée.
+  const duree =
+    (await dureeReservable(supabase, existante.prestation_id, existante.variante_id)) ??
+    minutesEntre(existante.heure_debut, existante.heure_fin);
   const heureFin = ajouterMinutes(heureDebut, duree);
 
   const appliquerReport = () =>
@@ -107,7 +110,7 @@ export async function reporterReservation(
         ics_sequence: existante.ics_sequence + 1,
       })
       .eq("id", id)
-      .select("id, jour, heure_debut, heure_fin, nom, email, ics_sequence, prestations(nom)")
+      .select("id, jour, heure_debut, heure_fin, nom, email, ics_sequence, variante_nom, prestations(nom)")
       .single();
 
   let resultat = await appliquerReport();
@@ -136,7 +139,10 @@ export async function reporterReservation(
       nom: data.nom,
       email: data.email,
       icsSequence: data.ics_sequence,
-      prestationNom: (data.prestations as unknown as { nom: string } | null)?.nom ?? "",
+      prestationNom: libelleSoin(
+        (data.prestations as unknown as { nom: string } | null)?.nom ?? "",
+        data.variante_nom,
+      ),
     },
     ancienJour,
     ancienneHeure,
@@ -159,17 +165,18 @@ export async function listerCreneauxPourReport(
 
   const { data: resa } = await supabase
     .from("reservations")
-    .select("prestation_id")
+    .select("prestation_id, variante_id, heure_debut, heure_fin")
     .eq("id", reservationId)
     .single();
   if (!resa) return [];
 
-  const [{ data: prestation }, { data: reglages }, { data: dispos }] = await Promise.all([
-    supabase.from("prestations").select("duree_minutes").eq("id", resa.prestation_id).single(),
+  const [dureeCourante, { data: reglages }, { data: dispos }] = await Promise.all([
+    dureeReservable(supabase, resa.prestation_id, resa.variante_id),
     supabase.from("reglages").select("battement_minutes").eq("id", 1).single(),
     supabase.from("disponibilites_recurrentes").select("jour_semaine, ouvert, heure_debut, heure_fin"),
   ]);
-  if (!prestation || !reglages || !dispos) return [];
+  if (!reglages || !dispos) return [];
+  const dureeMinutes = dureeCourante ?? minutesEntre(resa.heure_debut, resa.heure_fin);
 
   const debut = new Date();
   debut.setDate(debut.getDate() + 1);
@@ -200,7 +207,7 @@ export async function listerCreneauxPourReport(
     if (!dispo) continue;
 
     const slots = calculerCreneaux({
-      dureeMinutes: prestation.duree_minutes,
+      dureeMinutes,
       battementMinutes: reglages.battement_minutes,
       dispoJour: { ouvert: dispo.ouvert, heureDebut: dispo.heure_debut, heureFin: dispo.heure_fin },
       indisponibilites: (indispos ?? [])

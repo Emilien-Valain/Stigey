@@ -1,9 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
-import { getPrestations } from "@/lib/data/prestations";
+import { getCategories, getPrestations } from "@/lib/data/prestations";
+import { grouperParCategorie } from "@/lib/catalogue";
 
 export default async function Home() {
-  const PRESTATIONS = await getPrestations();
+  const [categories, toutes] = await Promise.all([getCategories(), getPrestations()]);
+  // Ordre de la praticienne : catégories, puis soins dans chaque catégorie.
+  const PRESTATIONS = grouperParCategorie(categories, toutes).flatMap((g) => g.prestations);
   return (
     <main>
       {/* ================= HERO ================= */}
@@ -89,16 +92,16 @@ export default async function Home() {
             <div
               key={p.id}
               className={`rounded-[24px] p-[18px] md:rounded-[26px] md:p-[26px] ${
-                p.badge ? "bg-cottonrose" : "bg-white"
+                p.miseEnAvant ? "bg-cottonrose" : "bg-white"
               }`}
             >
-              {p.badge && (
+              {p.miseEnAvant && (
                 <div className="text-[9px] font-bold tracking-[0.2em] text-brownred uppercase">
-                  {p.badge}
+                  Coup de cœur
                 </div>
               )}
               <h3
-                className={`font-serif text-[21px] leading-[1.2] font-medium md:text-[23px] ${p.badge ? "mt-2" : "mt-0"}`}
+                className={`font-serif text-[21px] leading-[1.2] font-medium md:text-[23px] ${p.miseEnAvant ? "mt-2" : "mt-0"}`}
               >
                 {p.nom}
               </h3>
@@ -108,7 +111,7 @@ export default async function Home() {
                 <span>{p.prix}</span>
               </div>
               <p
-                className={`mt-2.5 text-[13.5px] leading-[1.6] ${p.badge ? "text-[#5c1a18]" : "text-clay"}`}
+                className={`mt-2.5 text-[13.5px] leading-[1.6] ${p.miseEnAvant ? "text-[#5c1a18]" : "text-clay"}`}
               >
                 {p.accroche}
               </p>

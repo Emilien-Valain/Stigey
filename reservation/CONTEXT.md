@@ -10,9 +10,33 @@ en ligne. La vente en ligne existe, mais dans un **projet séparé** — la Bout
 ## Language
 
 **Prestation**:
-Un soin réservable, défini par une durée et un prix (ex. « Diagnostic », 1h, 40 €).
-Le catalogue compte 3 à 4 prestations.
+Un soin réservable, défini par une durée et un prix (ex. « Diagnostic », 1h, 40 €),
+ou par ses **Variantes** quand la durée et le prix dépendent d'un choix de la cliente.
+Elle appartient toujours à une **Catégorie** et peut être **mise en avant**.
 _Avoid_: Service, offre, produit
+
+**Variante**:
+Une déclinaison d'une Prestation, avec son propre nom, sa durée et son prix (ex.
+« Coiffage » : « Tresses » 1 h 30 à 60 €, « Chignon » 1 h à 40 €). La cliente en
+choisit exactement une ; elle **remplace** la durée et le prix de la Prestation, qui
+n'en a alors plus en propre. Une Prestation a soit aucune Variante, soit au moins
+deux. Une Variante se désactive, ne se supprime pas ; la Réservation en garde le nom
+et le prix figés. Voir ADR-0010.
+_Avoid_: Option, formule, déclinaison, supplément
+
+**Catégorie**:
+Un regroupement de Prestations que la praticienne crée, nomme et ordonne
+(ex. « Soins du cuir chevelu », « Massages »). L'ordre des Catégories, puis celui
+des Prestations dans chacune, est celui qu'elle a choisi et s'applique partout
+(accueil, page Prestations, tunnel de réservation). Une Catégorie ne peut pas être
+supprimée tant qu'elle contient des Prestations actives. Voir ADR-0008.
+_Avoid_: Famille, rubrique, section, type de soin
+
+**Mise en avant**:
+Case cochée par la praticienne sur une Prestation pour la mettre en valeur sur le
+site (carte rosée et mention « Coup de cœur »). Plusieurs Prestations peuvent être
+mises en avant. Remplace l'ancien « badge » libre.
+_Avoid_: Badge, promo, star, favori
 
 **Réservation**:
 L'acte par lequel un client bloque un créneau horaire pour une prestation donnée.

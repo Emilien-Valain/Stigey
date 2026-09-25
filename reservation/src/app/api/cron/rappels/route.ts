@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServiceClient } from "@/lib/supabase/service";
+import { libelleSoin } from "@/lib/format";
 import { envoyerRappel } from "@/lib/notify/reservation-emails";
 import { toISODate } from "@/lib/calendrier";
 
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("reservations")
-    .select("id, jour, heure_debut, heure_fin, nom, email, ics_sequence, prestations(nom)")
+    .select("id, jour, heure_debut, heure_fin, nom, email, ics_sequence, variante_nom, prestations(nom)")
     .eq("jour", jourCible)
     .eq("statut", "confirmee")
     .eq("rappel_envoye", false);
@@ -42,7 +43,10 @@ export async function GET(request: NextRequest) {
       nom: r.nom,
       email: r.email,
       icsSequence: r.ics_sequence,
-      prestationNom: (r.prestations as unknown as { nom: string } | null)?.nom ?? "",
+      prestationNom: libelleSoin(
+        (r.prestations as unknown as { nom: string } | null)?.nom ?? "",
+        r.variante_nom,
+      ),
     });
     await supabase.from("reservations").update({ rappel_envoye: true }).eq("id", r.id);
     envoyes++;

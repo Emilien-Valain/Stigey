@@ -21,6 +21,8 @@ type Item = {
   telephone: string;
   prestation: string;
   duree: string;
+  // Prix figé à la réservation ("" pour les plus anciennes).
+  prix: string;
   statutLabel: string;
   actionnable: boolean;
 };
@@ -233,6 +235,7 @@ export default function ReservationsClient({
             <Ligne label="Créneau" valeur={`${detail.jour} · ${detail.heure}`} />
             <Ligne label="Prestation" valeur={detail.prestation} />
             <Ligne label="Durée" valeur={detail.duree} />
+            {detail.prix && <Ligne label="Prix" valeur={detail.prix} />}
             <Ligne
               label="Téléphone"
               valeur={detail.telephone || "—"}

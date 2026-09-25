@@ -17,3 +17,15 @@ export function heureLabel(heure: string): string {
   const [h, m] = heure.split(":");
   return `${Number(h)}:${m}`;
 }
+
+// « Coiffage – Chignon » : nom d'affichage d'une Réservation (Prestation, plus
+// la Variante choisie s'il y en a une) — e-mails, .ics et listes admin.
+export function libelleSoin(prestationNom: string, varianteNom?: string | null): string {
+  return varianteNom ? `${prestationNom} – ${varianteNom}` : prestationNom;
+}
+
+export function minutesEntre(debut: string, fin: string): number {
+  const [dh, dm] = debut.split(":").map(Number);
+  const [fh, fm] = fin.split(":").map(Number);
+  return fh * 60 + fm - (dh * 60 + dm);
+}

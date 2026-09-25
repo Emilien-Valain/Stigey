@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import ReservationFlow from "@/components/ReservationFlow";
-import { getPrestations } from "@/lib/data/prestations";
+import { getCategories, getPrestations } from "@/lib/data/prestations";
 import { getJoursOuverts } from "@/lib/actions/reservations-publiques";
 
 export const metadata: Metadata = {
@@ -9,7 +9,11 @@ export const metadata: Metadata = {
 };
 
 export default async function ReservationPage() {
-  const [prestations, joursOuverts] = await Promise.all([getPrestations(), getJoursOuverts()]);
+  const [categories, prestations, joursOuverts] = await Promise.all([
+    getCategories(),
+    getPrestations(),
+    getJoursOuverts(),
+  ]);
   return (
     <main>
       <section className="bg-coffee px-5 pt-8 pb-6 md:px-12 md:pt-11 md:pb-14">
@@ -30,7 +34,7 @@ export default async function ReservationPage() {
       </section>
 
       <div className="rounded-t-[44px] bg-ivory md:rounded-t-[60px]">
-        <ReservationFlow prestations={prestations} joursOuverts={joursOuverts} />
+        <ReservationFlow categories={categories} prestations={prestations} joursOuverts={joursOuverts} />
       </div>
     </main>
   );

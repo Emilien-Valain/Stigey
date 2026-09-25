@@ -20,6 +20,9 @@ test("un client peut aller du choix du soin jusqu'à la confirmation", async ({ 
   let trouve = false;
   for (let i = 0; i < nbJours; i++) {
     await jours.nth(i).click();
+    // Les créneaux se chargent en asynchrone : sans cette attente, on
+    // conclurait « pas de créneau » avant même qu'ils soient arrivés.
+    await expect(page.getByText("Chargement des créneaux…")).toBeHidden();
     if (await creneauLibre.isVisible().catch(() => false)) {
       trouve = true;
       break;

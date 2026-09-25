@@ -2,23 +2,29 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { Prestation } from "@/lib/data/prestations";
+import type { Categorie, Prestation } from "@/lib/data/prestations";
+import { grouperParCategorie } from "@/lib/catalogue";
 import { genererJours, jourLabel, toISODate } from "@/lib/calendrier";
 import { getCreneauxDisponibles, creerReservation } from "@/lib/actions/reservations-publiques";
 import type { Slot } from "@/lib/creneaux";
 import { emailValide } from "@/lib/validation";
+import { libelleSoin } from "@/lib/format";
 
 const STEP_LABELS = ["Le soin", "Le créneau", "Vos coordonnées", "Confirmé"];
 
 export default function ReservationFlow({
+  categories,
   prestations,
   joursOuverts,
 }: {
+  categories: Categorie[];
   prestations: Prestation[];
   joursOuverts: number[];
 }) {
   const [step, setStep] = useState(1);
   const [soinId, setSoinId] = useState<string | null>(null);
+  // Choix obligatoire pour une Prestation à variantes (voir CONTEXT.md : Variante).
+  const [varianteId, setVarianteId] = useState<string | null>(null);
   const [jourTs, setJourTs] = useState<number | null>(null);
   const [heure, setHeure] = useState<string | null>(null);
   const [nom, setNom] = useState("");
@@ -32,18 +38,25 @@ export default function ReservationFlow({
   const [erreur, setErreur] = useState<string | null>(null);
 
   const soin = soinId ? prestations.find((p) => p.id === soinId) : undefined;
+  const variante = soin?.variantes.find((v) => v.id === varianteId);
+  // Durée, prix et nom effectivement réservés : ceux de la Variante choisie,
+  // sinon ceux de la Prestation simple.
+  const soinNom = soin ? libelleSoin(soin.nom, variante?.nom) : "";
+  const soinMeta = soin ? `${variante?.duree ?? soin.duree} · ${variante?.prix ?? soin.prix}` : "";
+  const choixVarianteEnCours = !!soin && soin.variantes.length > 0 && !variante;
+  const groupes = grouperParCategorie(categories, prestations, { masquerVides: true });
   const jours = useMemo(() => genererJours(joursOuverts, 8), [joursOuverts]);
   const jourDate = useMemo(() => (jourTs ? new Date(jourTs) : null), [jourTs]);
 
   useEffect(() => {
-    if (!jourDate || !soinId) return;
+    if (!jourDate || !soinId || choixVarianteEnCours) return;
     let annule = false;
     // Fetch-on-param-change (cf. react.dev/learn/you-might-not-need-an-effect
     // #fetching-data) : le drapeau de chargement est bien synchronisé sur un
     // système externe (la requête réseau), pas dérivé d'un autre état React.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSlotsLoading(true);
-    getCreneauxDisponibles(soinId, toISODate(jourDate))
+    getCreneauxDisponibles(soinId, toISODate(jourDate), varianteId ?? undefined)
       .then((s) => {
         if (!annule) setSlots(s);
       })
@@ -53,7 +66,7 @@ export default function ReservationFlow({
     return () => {
       annule = true;
     };
-  }, [jourDate, soinId]);
+  }, [jourDate, soinId, varianteId, choixVarianteEnCours]);
 
   const step2Ok = !!(jourTs && heure);
   const emailTouche = email.trim().length > 0;
@@ -63,6 +76,7 @@ export default function ReservationFlow({
   function reset() {
     setStep(1);
     setSoinId(null);
+    setVarianteId(null);
     setJourTs(null);
     setHeure(null);
     setNom("");
@@ -73,11 +87,12 @@ export default function ReservationFlow({
   }
 
   async function confirmer() {
-    if (!soinId || !jourDate || !heure || !emailValide(email)) return;
+    if (!soinId || choixVarianteEnCours || !jourDate || !heure || !emailValide(email)) return;
     setEnvoi(true);
     setErreur(null);
     const resultat = await creerReservation({
       prestationId: soinId,
+      varianteId: varianteId ?? undefined,
       jour: toISODate(jourDate),
       heure,
       nom,
@@ -96,7 +111,7 @@ export default function ReservationFlow({
       setHeure(null);
       setStep(2);
       setSlotsLoading(true);
-      getCreneauxDisponibles(soinId, toISODate(jourDate))
+      getCreneauxDisponibles(soinId, toISODate(jourDate), varianteId ?? undefined)
         .then(setSlots)
         .finally(() => setSlotsLoading(false));
     } else {
@@ -122,7 +137,48 @@ export default function ReservationFlow({
 
       <div className="mt-6 md:mt-9 md:grid md:grid-cols-[1.35fr_1fr] md:items-start md:gap-11">
         <div>
-          {step === 1 && (
+          {step === 1 && soin && choixVarianteEnCours && (
+            <div>
+              <button
+                type="button"
+                onClick={() => setSoinId(null)}
+                className="font-sans text-[10.5px] font-bold tracking-[0.14em] text-brownred uppercase transition-colors duration-200 hover:text-coffee md:text-[11px]"
+              >
+                ← Changer de soin
+              </button>
+              <h2 className="mt-3.5 font-serif text-[28px] font-normal md:mt-4 md:text-[38px]">
+                {soin.nom}
+              </h2>
+              <p className="mt-2 max-w-[560px] text-[13.5px] leading-[1.6] text-clay md:mt-2.5 md:text-[14.5px] md:leading-[1.7]">
+                Choisissez votre option : la durée et le prix en dépendent.
+              </p>
+              <div className="mt-[22px] grid grid-cols-1 gap-[11px] md:mt-[26px] md:grid-cols-2 md:gap-3.5">
+                {soin.variantes.map((v) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => {
+                      setVarianteId(v.id);
+                      setHeure(null);
+                      setStep(2);
+                    }}
+                    className="block w-full rounded-[22px] border-2 border-transparent bg-white p-[18px] text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-brownred/25 hover:bg-cottonrose/25 hover:shadow-[0_10px_24px_-14px_rgba(32,10,9,0.35)] md:p-5"
+                  >
+                    <div className="font-serif text-xl font-medium leading-[1.2] md:text-[22px]">
+                      {v.nom}
+                    </div>
+                    <div className="mt-[7px] flex items-center gap-2 font-sans text-[11px] font-bold tracking-[0.14em] text-brownred uppercase">
+                      <span>{v.duree}</span>
+                      <span className="h-[3px] w-[3px] rounded-full bg-sunflower" />
+                      <span>{v.prix}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {step === 1 && !choixVarianteEnCours && (
             <div>
               <h2 className="font-serif text-[28px] font-normal md:text-[38px]">
                 Quel soin souhaitez-vous ?
@@ -131,46 +187,63 @@ export default function ReservationFlow({
                 Si vous hésitez, commencez par le diagnostic : il est déduit du prix de votre
                 premier soin.
               </p>
-              <div className="mt-[22px] grid grid-cols-1 gap-[11px] md:mt-[26px] md:grid-cols-2 md:gap-3.5">
-                {prestations.map((p) => {
-                  const active = soinId === p.id;
-                  return (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => {
-                        setSoinId(p.id);
-                        setStep(2);
-                      }}
-                      className={`block w-full rounded-[22px] border-2 p-[18px] text-left transition-all duration-200 md:p-5 ${
-                        active
-                          ? "border-brownred bg-cottonrose"
-                          : "border-transparent bg-white hover:-translate-y-0.5 hover:border-brownred/25 hover:bg-cottonrose/25 hover:shadow-[0_10px_24px_-14px_rgba(32,10,9,0.35)]"
-                      }`}
-                    >
-                      <div className="font-serif text-xl font-medium leading-[1.2] md:text-[22px]">
-                        {p.nom}
-                      </div>
-                      <div className="mt-[7px] flex items-center gap-2 font-sans text-[11px] font-bold tracking-[0.14em] text-brownred uppercase">
-                        <span>{p.duree}</span>
-                        <span className="h-[3px] w-[3px] rounded-full bg-sunflower" />
-                        <span>{p.prix}</span>
-                      </div>
-                      <div className="mt-2 text-[12.5px] text-clay md:mt-2.5 md:text-[13px]">
-                        {p.accroche}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+              {groupes.map(({ categorie, prestations: soins }) => (
+                <div key={categorie.id} className="mt-[22px] md:mt-[26px]">
+                  {groupes.length > 1 && (
+                    <h3 className="mb-3 font-sans text-[10.5px] font-bold tracking-[0.18em] text-brownred uppercase">
+                      {categorie.nom}
+                    </h3>
+                  )}
+                  <div className="grid grid-cols-1 gap-[11px] md:grid-cols-2 md:gap-3.5">
+                    {soins.map((p) => {
+                      const active = soinId === p.id;
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => {
+                            setSoinId(p.id);
+                            setVarianteId(null);
+                            setHeure(null);
+                            // Une Prestation à variantes reste à l'étape 1 : la
+                            // durée dépend de la Variante, donc du calendrier.
+                            if (p.variantes.length === 0) setStep(2);
+                          }}
+                          className={`block w-full rounded-[22px] border-2 p-[18px] text-left transition-all duration-200 md:p-5 ${
+                            active
+                              ? "border-brownred bg-cottonrose"
+                              : "border-transparent bg-white hover:-translate-y-0.5 hover:border-brownred/25 hover:bg-cottonrose/25 hover:shadow-[0_10px_24px_-14px_rgba(32,10,9,0.35)]"
+                          }`}
+                        >
+                          <div className="font-serif text-xl font-medium leading-[1.2] md:text-[22px]">
+                            {p.nom}
+                          </div>
+                          <div className="mt-[7px] flex items-center gap-2 font-sans text-[11px] font-bold tracking-[0.14em] text-brownred uppercase">
+                            <span>{p.duree}</span>
+                            <span className="h-[3px] w-[3px] rounded-full bg-sunflower" />
+                            <span>{p.prix}</span>
+                          </div>
+                          <div className="mt-2 text-[12.5px] text-clay md:mt-2.5 md:text-[13px]">
+                            {p.accroche}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
-          {step === 2 && soin && (
+          {step === 2 && soin && !choixVarianteEnCours && (
             <div>
               <button
                 type="button"
-                onClick={() => setStep(1)}
+                onClick={() => {
+                  // Avec variantes, revenir à l'étape 1 rouvre le choix d'option.
+                  setVarianteId(null);
+                  setStep(1);
+                }}
                 className="font-sans text-[10.5px] font-bold tracking-[0.14em] text-brownred uppercase transition-colors duration-200 hover:text-coffee md:text-[11px]"
               >
                 ← Changer de soin
@@ -260,8 +333,8 @@ export default function ReservationFlow({
               )}
 
               <SummaryCard
-                soinNom={soin.nom}
-                soinMeta={`${soin.duree} · ${soin.prix}`}
+                soinNom={soinNom}
+                soinMeta={soinMeta}
                 jourTexte={jourDate ? jourLabel(jourDate) : "Créneau à choisir"}
                 heure={heure}
               >
@@ -375,8 +448,8 @@ export default function ReservationFlow({
               </p>
 
               <SummaryCard
-                soinNom={soin.nom}
-                soinMeta={`${soin.duree} · ${soin.prix}`}
+                soinNom={soinNom}
+                soinMeta={soinMeta}
                 jourTexte={jourDate ? jourLabel(jourDate) : ""}
                 heure={heure}
               >
@@ -413,9 +486,9 @@ export default function ReservationFlow({
               </p>
 
               <div className="mt-[22px] rounded-3xl bg-white p-[22px] text-left md:mt-[30px] md:rounded-[24px]">
-                <div className="font-serif text-xl md:text-[21px]">{soin.nom}</div>
+                <div className="font-serif text-xl md:text-[21px]">{soinNom}</div>
                 <div className="mt-1.5 font-sans text-[11px] font-bold tracking-[0.14em] text-brownred uppercase">
-                  {soin.duree} · {soin.prix}
+                  {soinMeta}
                 </div>
                 <div className="mt-3.5 border-t border-coffee/10 pt-3.5 text-sm">
                   {jourDate ? jourLabel(jourDate) : ""} à {heure}
