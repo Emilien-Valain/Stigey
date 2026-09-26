@@ -58,8 +58,8 @@ export default function AProposPage() {
           {[
             {
               label: "Diplôme",
-              value: "CAP Métiers de la coiffure",
-              texte: "Diplôme d’État",
+              value: "Coiffeuse diplômée",
+              texte: "formée au Head Spa et à la santé capillaire",
             },
             {
               label: "Expertise",

@@ -31,6 +31,8 @@ export default function ReservationFlow({
   const [email, setEmail] = useState("");
   const [tel, setTel] = useState("");
   const [rgpd, setRgpd] = useState(false);
+  // Cartes dont le détail (description, options, public) est déplié.
+  const [detailsOuverts, setDetailsOuverts] = useState<Set<string>>(new Set());
 
   const [slots, setSlots] = useState<Slot[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
@@ -72,6 +74,15 @@ export default function ReservationFlow({
   const emailTouche = email.trim().length > 0;
   const emailInvalide = emailTouche && !emailValide(email);
   const step3Ok = !!(nom.trim() && email.trim() && emailValide(email) && rgpd);
+
+  function basculerDetail(id: string) {
+    setDetailsOuverts((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   function reset() {
     setStep(1);
@@ -149,7 +160,10 @@ export default function ReservationFlow({
               <h2 className="mt-3.5 font-serif text-[28px] font-normal md:mt-4 md:text-[38px]">
                 {soin.nom}
               </h2>
-              <p className="mt-2 max-w-[560px] text-[13.5px] leading-[1.6] text-clay md:mt-2.5 md:text-[14.5px] md:leading-[1.7]">
+              <div className="max-w-[560px]">
+                <DetailPrestation prestation={soin} avecVariantes={false} />
+              </div>
+              <p className="mt-4 max-w-[560px] text-[13.5px] leading-[1.6] text-clay md:mt-5 md:text-[14.5px] md:leading-[1.7]">
                 Choisissez votre option : la durée et le prix en dépendent.
               </p>
               <div className="mt-[22px] grid grid-cols-1 gap-[11px] md:mt-[26px] md:grid-cols-2 md:gap-3.5">
@@ -197,36 +211,58 @@ export default function ReservationFlow({
                   <div className="grid grid-cols-1 gap-[11px] md:grid-cols-2 md:gap-3.5">
                     {soins.map((p) => {
                       const active = soinId === p.id;
+                      const detailOuvert = detailsOuverts.has(p.id);
                       return (
-                        <button
+                        <div
                           key={p.id}
-                          type="button"
-                          onClick={() => {
-                            setSoinId(p.id);
-                            setVarianteId(null);
-                            setHeure(null);
-                            // Une Prestation à variantes reste à l'étape 1 : la
-                            // durée dépend de la Variante, donc du calendrier.
-                            if (p.variantes.length === 0) setStep(2);
-                          }}
-                          className={`block w-full rounded-[22px] border-2 p-[18px] text-left transition-all duration-200 md:p-5 ${
+                          className={`rounded-[22px] border-2 transition-all duration-200 ${
                             active
                               ? "border-brownred bg-cottonrose"
                               : "border-transparent bg-white hover:-translate-y-0.5 hover:border-brownred/25 hover:bg-cottonrose/25 hover:shadow-[0_10px_24px_-14px_rgba(32,10,9,0.35)]"
                           }`}
                         >
-                          <div className="font-serif text-xl font-medium leading-[1.2] md:text-[22px]">
-                            {p.nom}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSoinId(p.id);
+                              setVarianteId(null);
+                              setHeure(null);
+                              // Une Prestation à variantes reste à l'étape 1 : la
+                              // durée dépend de la Variante, donc du calendrier.
+                              if (p.variantes.length === 0) setStep(2);
+                            }}
+                            className="block w-full rounded-[20px] p-[18px] pb-3 text-left md:p-5 md:pb-3"
+                          >
+                            <div className="font-serif text-xl font-medium leading-[1.2] md:text-[22px]">
+                              {p.nom}
+                            </div>
+                            <div className="mt-[7px] flex items-center gap-2 font-sans text-[11px] font-bold tracking-[0.14em] text-brownred uppercase">
+                              <span>{p.duree}</span>
+                              <span className="h-[3px] w-[3px] rounded-full bg-sunflower" />
+                              <span>{p.prix}</span>
+                            </div>
+                            <div className="mt-2 text-[12.5px] text-clay md:mt-2.5 md:text-[13px]">
+                              {p.accroche}
+                            </div>
+                          </button>
+                          {/* Bouton séparé : déplier le détail ne sélectionne pas le soin. */}
+                          <div className="px-[18px] pb-4 md:px-5 md:pb-[18px]">
+                            <button
+                              type="button"
+                              aria-expanded={detailOuvert}
+                              aria-controls={`detail-${p.id}`}
+                              onClick={() => basculerDetail(p.id)}
+                              className="font-sans text-[10.5px] font-bold tracking-[0.14em] text-brownred uppercase transition-colors duration-200 hover:text-coffee"
+                            >
+                              {detailOuvert ? "Masquer le détail ↑" : "Voir le détail ↓"}
+                            </button>
+                            {detailOuvert && (
+                              <div id={`detail-${p.id}`}>
+                                <DetailPrestation prestation={p} />
+                              </div>
+                            )}
                           </div>
-                          <div className="mt-[7px] flex items-center gap-2 font-sans text-[11px] font-bold tracking-[0.14em] text-brownred uppercase">
-                            <span>{p.duree}</span>
-                            <span className="h-[3px] w-[3px] rounded-full bg-sunflower" />
-                            <span>{p.prix}</span>
-                          </div>
-                          <div className="mt-2 text-[12.5px] text-clay md:mt-2.5 md:text-[13px]">
-                            {p.accroche}
-                          </div>
-                        </button>
+                        </div>
                       );
                     })}
                   </div>
@@ -524,6 +560,36 @@ export default function ReservationFlow({
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailPrestation({
+  prestation: p,
+  avecVariantes = true,
+}: {
+  prestation: Prestation;
+  avecVariantes?: boolean;
+}) {
+  return (
+    <div className="mt-3 text-[12.5px] leading-[1.65] text-clay md:text-[13px]">
+      <p className="md:hidden">{p.descriptionMobile ?? p.description}</p>
+      <p className="hidden md:block">{p.description}</p>
+      {avecVariantes && p.variantes.length > 0 && (
+        <ul aria-label={`Options de ${p.nom}`} className="mt-3 flex flex-col gap-1">
+          {p.variantes.map((v) => (
+            <li key={v.id} className="flex justify-between gap-3">
+              <span>{v.nom}</span>
+              <span className="whitespace-nowrap">
+                {v.duree} · {v.prix}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="mt-3 border-t border-coffee/[.12] pt-3">
+        <b className="text-coffee">Pour qui</b> · {p.cible}
       </div>
     </div>
   );
