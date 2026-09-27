@@ -197,9 +197,13 @@ export default function ReservationFlow({
               <h2 className="font-serif text-[28px] font-normal md:text-[38px]">
                 Quel soin souhaitez-vous ?
               </h2>
-              <p className="mt-2 max-w-[560px] text-[13.5px] leading-[1.6] text-clay md:mt-2.5 md:text-[14.5px] md:leading-[1.7]">
-                Si vous hésitez, commencez par le diagnostic : il est déduit du prix de votre
-                premier soin.
+              <p className="mt-3 max-w-[560px] rounded-2xl bg-cottonrose/30 px-4 py-3 text-[13.5px] leading-[1.6] text-coffee md:mt-4 md:text-[14.5px]">
+                <span className="font-bold">Vous avez une carte cadeau ?</span> Appelez-moi
+                directement au{" "}
+                <a href="tel:+33771140945" className="font-bold whitespace-nowrap underline">
+                  07 71 14 09 45
+                </a>{" "}
+                pour réserver votre soin offert.
               </p>
               {groupes.map(({ categorie, prestations: soins }) => (
                 <div key={categorie.id} className="mt-[22px] md:mt-[26px]">
