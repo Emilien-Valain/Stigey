@@ -131,6 +131,12 @@ export default async function PrestationsPage() {
                     >
                       <b className="text-coffee">Pour qui</b> · {p.cible}
                     </div>
+                    <Link
+                      href={`/reservation?soin=${p.id}`}
+                      className="mt-4 block rounded-full bg-sunflower py-3.5 text-center font-sans text-[10.5px] font-bold tracking-[0.16em] text-coffee uppercase transition-all duration-200 hover:brightness-105 active:scale-[0.97]"
+                    >
+                      Réserver ce soin
+                    </Link>
                   </div>
                 </div>
               ))}

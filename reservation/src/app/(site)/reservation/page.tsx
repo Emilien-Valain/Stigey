@@ -8,7 +8,12 @@ export const metadata: Metadata = {
   description: "Réservez votre soin du cuir chevelu chez Stigey : choisissez votre prestation, votre créneau et vos coordonnées.",
 };
 
-export default async function ReservationPage() {
+export default async function ReservationPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ soin?: string | string[] }>;
+}) {
+  const { soin } = await searchParams;
   const [categories, prestations, joursOuverts] = await Promise.all([
     getCategories(),
     getPrestations(),
@@ -34,7 +39,12 @@ export default async function ReservationPage() {
       </section>
 
       <div className="rounded-t-[44px] bg-ivory md:rounded-t-[60px]">
-        <ReservationFlow categories={categories} prestations={prestations} joursOuverts={joursOuverts} />
+        <ReservationFlow
+          categories={categories}
+          prestations={prestations}
+          joursOuverts={joursOuverts}
+          soinInitialId={typeof soin === "string" ? soin : undefined}
+        />
       </div>
     </main>
   );

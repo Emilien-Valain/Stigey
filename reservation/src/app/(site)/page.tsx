@@ -84,9 +84,10 @@ export default async function Home() {
 
         <div className="mt-[22px] grid grid-cols-1 gap-[13px] md:mt-[38px] md:grid-cols-4 md:gap-[18px]">
           {PRESTATIONS.map((p) => (
-            <div
+            <Link
               key={p.id}
-              className={`rounded-[24px] p-[18px] md:rounded-[26px] md:p-[26px] ${
+              href={`/reservation?soin=${p.id}`}
+              className={`flex flex-col rounded-[24px] p-[18px] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-14px_rgba(32,10,9,0.35)] md:rounded-[26px] md:p-[26px] ${
                 p.miseEnAvant ? "bg-cottonrose" : "bg-white"
               }`}
             >
@@ -110,7 +111,10 @@ export default async function Home() {
               >
                 {p.accroche}
               </p>
-            </div>
+              <span className="mt-auto pt-3.5 font-sans text-[10.5px] font-bold tracking-[0.14em] text-brownred uppercase">
+                Réserver →
+              </span>
+            </Link>
           ))}
         </div>
 

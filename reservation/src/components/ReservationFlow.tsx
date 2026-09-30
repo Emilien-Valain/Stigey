@@ -16,13 +16,20 @@ export default function ReservationFlow({
   categories,
   prestations,
   joursOuverts,
+  soinInitialId,
 }: {
   categories: Categorie[];
   prestations: Prestation[];
   joursOuverts: number[];
+  // Soin présélectionné depuis une carte (?soin=<id>). Inconnu ou inactif :
+  // ignoré, le tunnel démarre normalement à l'étape 1.
+  soinInitialId?: string;
 }) {
-  const [step, setStep] = useState(1);
-  const [soinId, setSoinId] = useState<string | null>(null);
+  const soinInitial = prestations.find((p) => p.id === soinInitialId);
+  // Soin simple : directement au créneau. À variantes : l'étape 1 affiche le
+  // choix d'option du soin.
+  const [step, setStep] = useState(soinInitial && soinInitial.variantes.length === 0 ? 2 : 1);
+  const [soinId, setSoinId] = useState<string | null>(soinInitial?.id ?? null);
   // Choix obligatoire pour une Prestation à variantes (voir CONTEXT.md : Variante).
   const [varianteId, setVarianteId] = useState<string | null>(null);
   const [jourTs, setJourTs] = useState<number | null>(null);
